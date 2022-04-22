@@ -1,13 +1,6 @@
 const http = require('http');
 const express = require('express')
 const fetch = require('node-fetch');
-
-//https://nightlycommit.github.io/twing/intro.html#real-world-example-using-express
-const {TwingEnvironment, TwingLoaderFilesystem} = require('twing');
-let loader = new TwingLoaderFilesystem('./templates');
-let twing = new TwingEnvironment(loader);
-        
-
 const app = express()
 
 const hostname = '127.0.0.1';
