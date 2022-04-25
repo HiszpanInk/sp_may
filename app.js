@@ -3,6 +3,10 @@ const express = require('express')
 const fetch = require('node-fetch');
 const app = express()
 
+var { Liquid } = require('liquidjs');
+var engine = new Liquid();
+
+
 const hostname = '127.0.0.1';
 const port = 3000;
 

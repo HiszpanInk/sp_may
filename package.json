@@ -1,6 +1,7 @@
 {
   "dependencies": {
     "express": "^4.17.3",
+    "liquidjs": "^9.37.0",
     "node-fetch": "^2.6.7",
     "plotly.js-dist-min": "^2.11.1"
   },
@@ -8,7 +9,6 @@
   "description": "Używane pakiety z npm:\r - [express](https://www.npmjs.com/package/express)\r - [node-fetch (w wersji drugiej)](https://www.npmjs.com/package/node-fetch)\r - [Twing](https://www.npmjs.com/package/twing)\r - [Plotly.js](https://www.npmjs.com/package/plotly.js)",
   "version": "1.0.0",
   "main": "app.js",
-  "devDependencies": {},
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
   },
