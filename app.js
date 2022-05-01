@@ -21,19 +21,12 @@ const port = 3000;
 
 
 
-function searchAnime(searchQuery) {
+async function searchAnime(searchQuery) {
   let max_search_results = 10;
-  fetch(`https://api.jikan.moe/v4/anime?page=1&q=${query}&limit=${max_search_results}`)
-    .then(response => response.json())
-    .then(data => {
-      parsed_data = JSON.parse(data);
-      return parsed_data;
-  })
-  .catch(err => { 
-    console.log(err) 
-    return "API ERROR (albo moja pomyłka przy funkcji pytającej api, lol)"
-  
-  })
+  const response = await fetch(`https://api.jikan.moe/v4/anime?page=1&q=${searchQuery}&limit=${max_search_results}`)
+  const data = await response.json();
+  //let data_array = JSON.parse(data)
+  return data;
 }
 
 
@@ -41,26 +34,30 @@ app.get('/', function (req, res) {
   res.send('Hello World');
 })
 
-app.get('/searchAnime', function (req, res) {
+app.get('/searchAnime', async function (req, res) {
   if (typeof req.query.searchQuery !== 'undefined') {
-    // the variable is defined
-    //generowanie strony jak ktoś zrobił zapytanie
-    let api_request_response = searchAnime(req.searchQuery);
+    // the variable is defined, generowanie strony jak ktoś zrobił zapytanie
+    let api_request_response = await searchAnime(req.query.searchQuery);
     //sprawdzamy czy zmienna jest tablicą, jeśli ją nie jest to sprawdzamy czy jest stringiem bo jeśli jest to wystąpił błąd
-    if(Array.isArray(api_request_response)) {
-      res.send('jeszcze tutaj trzeba coś zrobić');
-    } /*else if ("abc") {
-      //API coś się wtedy zrąbało
-      console.log("abc");
-
+    if(typeof api_request_response == 'object') {
+      if(Object.values(api_request_response)[1] !== 'HttpException') {
+        paragraph_content = Object.values(api_request_response);
+        console.log(paragraph_content[1]);
+        //i tutaj trzeba będzie przerobić te dane na tabelkę do HTMLa
+        res.render('db_default_view', {subsite_title: `Wyniki wyszukiwania dla frazy "${req.query.searchQuery}"`, paragraph_content: "bruh"});
+      } else if (Object.values(api_request_response)[1] == 'HttpException')
+      //błąd typu 404 
+        res.render('db_default_view', {subsite_title: "Błąd", paragraph_content: `Wystąpił błąd typu HTTP przy próbie zapytania do API. Kod błędu: ${Object.values(api_request_response)[0]}`});
     } else {
       //nieznany błąd
-      console.log("")
-    }*/
+      res.render('db_default_view', {subsite_title: "Błąd", paragraph_content: "Wystąpił nieznany błąd przy próbie wystosowania zapytania do API"});
+    }
 
   } else {
-    //generowanie strony jak ktoś chce wyszukać sobie przy pomocy tej strony (bo do tej strony można przekierować będzie ze strony głównej bo tam zrobię jakiś )
-    res.render('db_default_view', {subsite_title: 'Szukaj tytułu', paragraph_content: '(tutaj będzie duże pole wyszukiwania)'});
+    //generowanie strony jak ktoś chce wyszukać sobie przy pomocy tej strony 
+    //(bo do tej strony można przekierować będzie ze strony głównej bo tam zrobię jakiś )
+    let paragraph_content = '<form method="GET" action="/searchAnime"><input class="form-control" name="search_content" type="text" style="width: 20%" placeholder="Search"><br><input type="submit" value="Szukaj" class="btn btn-secondary"></form>'
+    res.render('db_default_view', {subsite_title: 'Szukaj tytułu', paragraph_content: paragraph_content});
   }
 })
 
