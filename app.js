@@ -19,14 +19,35 @@ app.use(express.static(path.join(__dirname, 'public')));
 const hostname = '127.0.0.1';
 const port = 3000;
 
+//kod zarąbany z: https://dmitripavlutin.com/timeout-fetch-request/
+async function fetchWithTimeout(resource, options = {}) {
+  const { timeout = 8000 } = options;
+  
+  const controller = new AbortController();
+  const id = setTimeout(() => controller.abort(), timeout);
+  const response = await fetch(resource, {
+    ...options,
+    signal: controller.signal  
+  });
+  clearTimeout(id);
+  return response;
+}
 
 
 async function searchAnime(searchQuery) {
   let max_search_results = 10;
-  const response = await fetch(`https://api.jikan.moe/v4/anime?page=1&q=${searchQuery}&limit=${max_search_results}`)
-  const data = await response.json();
-  //let data_array = JSON.parse(data)
-  return data;
+  //const response = await fetch(`https://api.jikan.moe/v4/anime?page=1&q=${searchQuery}&limit=${max_search_results}`)
+  try {
+    const response = await fetchWithTimeout(`https://api.jikan.moe/v4/anime?page=1&q=${searchQuery}&limit=${max_search_results}`, {
+      timeout: 6000
+    });
+    const data = await response.json();
+    return data;
+  } catch (error) {
+    // Timeouts if the request takes longer than specified ammount of time
+    //console.log(error.name === 'AbortError');
+    return "API 'Jikan' nie odpowiada.";
+  }
 }
 
 
@@ -50,7 +71,9 @@ app.get('/searchAnime', async function (req, res) {
         res.render('db_default_view', {subsite_title: "Błąd", paragraph_content: `Wystąpił błąd typu HTTP przy próbie zapytania do API. Kod błędu: ${Object.values(api_request_response)[0]}`});
     } else {
       //nieznany błąd
-      res.render('db_default_view', {subsite_title: "Błąd", paragraph_content: "Wystąpił nieznany błąd przy próbie wystosowania zapytania do API"});
+      console.log(api_request_response);
+      let paragraph_content = "Wystąpił nieznany błąd przy próbie wystosowania zapytania do API. Możliwe iż jest ono niedostępne w tym momencie."
+      res.render('db_default_view', {subsite_title: "Błąd", paragraph_content: paragraph_content});
     }
 
   } else {
