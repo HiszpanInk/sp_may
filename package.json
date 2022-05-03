@@ -2,8 +2,10 @@
   "dependencies": {
     "express": "^4.17.3",
     "liquidjs": "^9.37.0",
+    "mysql": "^2.18.1",
     "node-fetch": "^2.6.7",
-    "plotly.js-dist-min": "^2.11.1"
+    "plotly.js-dist-min": "^2.11.1",
+    "util": "^0.12.4"
   },
   "name": "sp_may",
   "description": "Używane pakiety z npm:\r - [express](https://www.npmjs.com/package/express)\r - [node-fetch (w wersji drugiej)](https://www.npmjs.com/package/node-fetch)\r - [Twing](https://www.npmjs.com/package/twing)\r - [Plotly.js](https://www.npmjs.com/package/plotly.js)",
