@@ -5,7 +5,6 @@ const http = require('http');
 const path = require('path');
 const express = require('express')
 const fetch = require('node-fetch');
-
 const util = require("util"); 
 //https://www.npmjs.com/package/table-sort-js
 const app = express()
@@ -21,7 +20,7 @@ app.set('views', './views');            // specify the views directory
 app.set('view engine', 'liquid'); 
 app.use(express.static(path.join(__dirname, 'public')));
 
-
+let sleep = ms => new Promise(resolve => setTimeout(resolve, ms));
 
 
 var mysql = require('mysql');
@@ -170,8 +169,6 @@ async function addAnimeToInternalDB(data) {
 async function removeAnimeFromInternalDB(animeInternalID) {
   await db_con.query(`DELETE FROM anime WHERE ID_Internal="${animeInternalID}"`);
 }
-
-
 
 //to jest funkcja potrzebna przy tych tabelkach w następnej funckji
 //służy do znajdywania w tabelach status, type i season odpowiednich nazw po polsku
@@ -332,10 +329,6 @@ async function createSearchResultsTableFromInternalDB() {
     };
     var genre = "";
     if(typeof required_data['genre'] != "undefined" && required_data['genre'] != null && Object.keys(required_data['genre']).length == 0) genre = await getFieldTranslationForTable("genre", "ID", required_data['genre']);
-    
-    
-    
-    
 
     var status_name = await getFieldTranslationForTable("status", "ID", required_data['status']);
     var type_name = await getFieldTranslationForTable("type", "ID", required_data['type']);
@@ -380,6 +373,45 @@ async function createSearchResultsTableFromInternalDB() {
   html_table += "</table>";
   return html_table;
 }
+
+async function refreshStatisticsInInternalDB() {
+  let anime_mal_id_list = await db_con.query(`SELECT ID_Internal, ID_MAL FROM anime`);
+  let ifErrorOccurred = false;
+  await sleep(500);
+  for (const [key, value] of Object.entries(anime_mal_id_list)) {
+    let id_data_set = [key, value][1];
+    let anime_MAL_updated_data = "";
+    try {
+      const response = await fetchWithTimeout(`https://api.jikan.moe/v4/anime/${id_data_set['ID_MAL']}`, {timeout: 6000});
+      const data = await response.json();
+      anime_MAL_updated_data = data;
+    } catch (error) {
+      anime_MAL_updated_data = "API 'Jikan' nie odpowiada.";
+      ifErrorOccurred = true;
+    }
+    if(ifErrorOccurred == true) {
+      break;
+    }
+    let required_data = {
+      'Avg_Rating' : anime_MAL_updated_data['data']['score'],
+      'Viewers_Count' : anime_MAL_updated_data['data']['members'],
+      'Episodes_Count' : anime_MAL_updated_data['data']['episodes'],
+      'Status_ID' : anime_MAL_updated_data['data']['status']
+    }
+    required_data['Status_ID'] = await getInternalIDByName("status", required_data['Status_ID']);
+
+    for (const [key, value] of Object.entries(required_data)) {
+      if(value == null || value == "") {
+        required_data[key] = "NULL";
+      } else {
+        required_data[key] = `'${required_data[key]}'`;
+      }
+    }
+    await db_con.query(`UPDATE anime SET Avg_Rating=${required_data['Avg_Rating']}, Viewers_Count=${required_data['Viewers_Count']}, Episodes_Count=${required_data['Episodes_Count']}, Status_ID=${required_data['Status_ID']} WHERE ID_Internal=${id_data_set['ID_Internal']}`);
+    await sleep(750);
+  }
+}
+
 
 
 
@@ -451,10 +483,12 @@ app.get('/addAnime', async function (req, res) {
         let paragraph_content = "Wystąpił nieznany błąd przy próbie wystosowania zapytania do API. Możliwe iż jest ono niedostępne w tym momencie."
         res.render('db_default_view', {subsite_title: "Błąd", paragraph_content: paragraph_content});
       }
+    } else {
+      res.redirect('/searchAnime');
     } 
-  } 
-  res.redirect('/searchAnime');
-  
+  } else {
+    res.redirect('/searchAnime');
+  }
 })
 
 app.get('/removeAnime', async function (req, res) {
@@ -466,7 +500,8 @@ app.get('/removeAnime', async function (req, res) {
   res.redirect('/');
 })
 
-app.get('/refreshStatistics', async function (req, res) {
+app.get('/refreshAnimeStatistics', async function (req, res) {
+  await refreshStatisticsInInternalDB();
   res.redirect('/');
 })
 
