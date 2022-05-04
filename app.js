@@ -7,7 +7,7 @@ const express = require('express')
 const fetch = require('node-fetch');
 
 const util = require("util"); 
-
+//https://www.npmjs.com/package/table-sort-js
 const app = express()
 
 var { Liquid } = require('liquidjs');
@@ -169,8 +169,9 @@ async function addAnimeToInternalDB(data) {
 }
 //to jest funkcja potrzebna przy tych tabelkach w następnej funckji
 //służy do znajdywania w tabelach status, type i season odpowiednich nazw po polsku
-async function getFieldTranslationForTable(table, value) {
-  var data = await db_con.query(`SELECT Name_PL FROM ${table} WHERE Name="${value}"`);
+//table - tabelka, value - wartość po której szukamy, searchBy - kolumna po której szukamy
+async function getFieldTranslationForTable(table, searchBy, value) {
+  var data = await db_con.query(`SELECT Name_PL FROM ${table} WHERE ${searchBy}="${value}"`);
   if(!data || data.length == 0 || data == null) {
     if(value != "Nie podano") console.log(`Brakująca wartość w tabeli ${table}:${value}`);
     return data;
@@ -186,12 +187,12 @@ async function getFieldTranslationForTable(table, value) {
 async function createSearchResultsTable(searchResultsData) {
   let html_table = "";
 
-  html_table += '<table class="table table-bordered">';
+  html_table += '<table class="table-sort remember-sort table table-bordered table-arrows">';
 
 
   html_table += '<thead class="thead-dark"><tr>';
 
-  html_table += "<th>Grafika</th>";
+  html_table += `<th class="data-sort">Grafika</th>`;
   html_table += "<th>Tytuł</th>";
   html_table += "<th>Status</th>";
   html_table += "<th>Średnia ocena</th>";
@@ -203,7 +204,7 @@ async function createSearchResultsTable(searchResultsData) {
   html_table += "<th>Akcje</th>";
 
   html_table += "</thead></tr>";
-  
+  let index = 1;
   for (const [key, value] of Object.entries(searchResultsData)) {
     let required_data = {
       'title' : value['title'], 
@@ -223,7 +224,7 @@ async function createSearchResultsTable(searchResultsData) {
       genre = "Nie podano";
     } else {
       required_data['genre'] = required_data['genre'][0]['name'];
-      genre = await getFieldTranslationForTable("genre", required_data['genre']);
+      genre = await getFieldTranslationForTable("genre", "Name", required_data['genre']);
     }  
     
 
@@ -245,11 +246,11 @@ async function createSearchResultsTable(searchResultsData) {
       }
     }
 
-    var status_name = await getFieldTranslationForTable("status", required_data['status']);
-    var type_name = await getFieldTranslationForTable("type", required_data['type']);
+    var status_name = await getFieldTranslationForTable("status", "Name", required_data['status']);
+    var type_name = await getFieldTranslationForTable("type", "Name", required_data['type']);
 
     var year_season_name = "";
-    var season_name = await getFieldTranslationForTable("season", required_data['season']);
+    var season_name = await getFieldTranslationForTable("season", "Name", required_data['season']);
 
     //yes, this part is messy and stupid but I don't really have time for perfectionism, so if it works - great!
     if ((!season_name || season_name.length == 0 || season_name == null || season_name == "") && (!required_data['year'] || required_data['year'].length == 0 || required_data['year'] == null || required_data['year'] == "")) {
@@ -266,7 +267,7 @@ async function createSearchResultsTable(searchResultsData) {
 
     html_table += `<tr>`;
 
-    html_table += `<td><img src='${required_data['image']}' alt='Grafika dla tytułu ${required_data['title']}'></td>`;
+    html_table += `<td data-sort="${index}"><img src='${required_data['image']}' alt='Grafika dla tytułu ${required_data['title']}'></td>`;
     html_table += `<td>${required_data['title']}</td>`;
     html_table += `<td>${status_name}</td>`;
     html_table += `<td>${required_data['score']}</td>`;
@@ -278,19 +279,117 @@ async function createSearchResultsTable(searchResultsData) {
     html_table += `<td><form method="GET" action="/addAnime"><button type="submit" value="${required_data["mal_id"]}" name="anime_mal_id" class="btn btn-secondary">Dodaj do bazy danych</button></form><br><br><a href="https://myanimelist.net/anime/${required_data["mal_id"]}" target="_blank"><button class="btn btn-secondary">Link do MALa</button></a></td>`;
     
     html_table += `</tr>`;
+    index = index + 1;
   }
   html_table += "</table>";
+  //dodanie możliwości sortowania tabelki
+  return html_table;
+}
 
+
+async function createSearchResultsTableFromInternalDB() {
+  let data = await db_con.query(`SELECT * FROM anime;`);
+  let html_table = "";
+
+  html_table += '<table class="table table-bordered table-sort remember-sort table-bordered table-arrows">';
+
+
+  html_table += '<thead class="thead-dark"><tr>';
+
+  html_table += `<th class="data-sort">Grafika</th>`;
+  html_table += "<th>Tytuł</th>";
+  html_table += '<th>Status</th>';
+  html_table += '<th>Średnia ocena</th>';
+  html_table += '<th>Liczba widzów</th>';
+  html_table += '<th>Liczba odcinków</th>';
+  html_table += "<th>Typ</th>";
+  html_table += '<th class="th-sm">Sezon</th>';
+  html_table += "<th>Gatunek</th>";
+  html_table += "<th>Akcje</th>";
+
+  html_table += "</thead></tr>";
+  
+ 
+  for (const [key, value] of Object.entries(data)) {
+    console.log(value);
+     
+    let required_data = {
+      'internal_id' : value['ID_Internal'], 
+      'mal_id' : value['ID_MAL'], 
+      'title' : value['Title'],
+      'status' : value['Status_ID'], //fk
+      'season' : value['Season'], //fk
+      'image' : value['Image_URL'], 
+      'type' : value['Type'], //fk
+      'score' : value['Avg_Rating'], 
+      'members' : value['Viewers_Count'], 
+      'episodes' : value['Episodes_Count'], 
+      'year' : value['Year_Broadcast'], 
+      'genre' : value['Genre'] //fk
+    };
+    var genre = "";
+    if(typeof required_data['genre'] != "undefined" && required_data['genre'] != null && Object.keys(required_data['genre']).length == 0) genre = await getFieldTranslationForTable("genre", "ID", required_data['genre']);
+    
+    
+    
+    
+
+    var status_name = await getFieldTranslationForTable("status", "ID", required_data['status']);
+    var type_name = await getFieldTranslationForTable("type", "ID", required_data['type']);
+
+    var year_season_name = "";
+    var season_name = await getFieldTranslationForTable("season", "ID", required_data['season']);
+
+    //yes, this part is messy and stupid but I don't really have time for perfectionism, so if it works - great!
+    if ((!season_name || season_name.length == 0 || season_name == null || season_name == "") && (!required_data['year'] || required_data['year'].length == 0 || required_data['year'] == null || required_data['year'] == "")) {
+      year_season_name = "Brak danych";
+    } else {
+      if(!season_name || season_name.length == 0 || season_name == null || season_name == "") {
+        year_season_name = `${required_data['year']}`;
+      } else if (!required_data['year'] || required_data['year'].length == 0 || required_data['year'] == null || required_data['year'] == "") {
+        year_season_name = `${season_name}`;
+      } else {
+        year_season_name = `${required_data['year']} - ${season_name}`;
+      }
+    }
+    for (const [key, value] of Object.entries(required_data)) {
+      if(value == null || value == "") {
+        required_data[key] = "Nie podano";
+      }
+    }
+
+    html_table += `<tr>`;
+
+    html_table += `<td data-sort="${required_data["internal_id"]}"><img src='${required_data['image']}' alt='Grafika dla tytułu ${required_data['title']}'></td>`;
+    html_table += `<td>${required_data['title']}</td>`;
+    html_table += `<td>${status_name}</td>`;
+    html_table += `<td>${required_data['score']}</td>`;
+    html_table += `<td>${required_data['members']}</td>`;
+    html_table += `<td>${required_data['episodes']}</td>`;
+    html_table += `<td>${type_name}</td>`;
+    html_table += `<td>${year_season_name}</td>`;
+    html_table += `<td>${genre}</td>`;
+    html_table += `<td><form method="GET" action="/removeAnime"><button type="submit" value="${required_data["internal_id"]}" name="anime_internal_id" class="btn btn-secondary">Usuń z bazy danych</button></form><br><br><a href="https://myanimelist.net/anime/${required_data["mal_id"]}" target="_blank"><button class="btn btn-secondary">Link do MALa</button></a></td>`;
+    
+    html_table += `</tr>`; 
+  }
+ 
+  html_table += "</table>";
   return html_table;
 }
 
 
 
 
-
-
-app.get('/', function (req, res) {
+app.get('/hw', function (req, res) {
   res.send('Hello World');
+})
+
+app.get('/', async function (req, res) {
+  let paragraph_content = "";
+  paragraph_content += await createSearchResultsTableFromInternalDB();
+  paragraph_content += "<a href='/refreshAnimeStatistics'><button class='btn btn-info'>Odśwież statystyki</button></a>";
+  res.render('db_default_view', {subsite_title: 'Lista', paragraph_content: paragraph_content});
 })
 
 app.get('/searchAnime', async function (req, res) {
@@ -302,7 +401,6 @@ app.get('/searchAnime', async function (req, res) {
       if(Object.values(api_request_response)[1] !== 'HttpException') {
         //i tutaj trzeba będzie przerobić te dane na tabelkę do HTMLa i tym się będzie zajmowała funkcja createSearchResultsTable
         let paragraph_content = createSearchResultsTable(Object.values(api_request_response["data"]));
-        
         res.render('db_default_view', {subsite_title: `Wyniki wyszukiwania dla frazy "${req.query.searchQuery}"`, paragraph_content: paragraph_content});
       } else if (Object.values(api_request_response)[1] == 'HttpException')
       //błąd typu 404 
@@ -323,37 +421,52 @@ app.get('/searchAnime', async function (req, res) {
 
 app.get('/addAnime', async function (req, res) {
   if (typeof req.query.anime_mal_id !== 'undefined') {
-    // the variable is defined, generowanie strony jak ktoś zrobił zapytanie
-    let api_request_response = await getAnimeDataById(req.query.anime_mal_id);
-    //sprawdzamy czy zmienna jest obiektem, jeśli ją nie jest to sprawdzamy czy jest stringiem bo jeśli jest to wystąpił błąd
-    if(typeof api_request_response == 'object') {
-      if(Object.values(api_request_response)[1] !== 'HttpException') {
-        console.log(api_request_response);
-        let response_addToDB = await addAnimeToInternalDB(api_request_response["data"]);
-        //tutaj potem zamienić na stronę główną z listą dodanych do bazy anime
-        if(response_addToDB == "") {
-          res.redirect('/searchAnime');
+    if(req.query.anime_mal_id != "") {
+      // the variable is defined, generowanie strony jak ktoś zrobił zapytanie
+      let api_request_response = await getAnimeDataById(req.query.anime_mal_id);
+      //sprawdzamy czy zmienna jest obiektem, jeśli ją nie jest to sprawdzamy czy jest stringiem bo jeśli jest to wystąpił błąd
+      if(typeof api_request_response == 'object') {
+        if(Object.values(api_request_response)[1] !== 'HttpException') {
+          console.log(api_request_response);
+          let response_addToDB = await addAnimeToInternalDB(api_request_response["data"]);
+          if(response_addToDB == "") {
+            res.redirect('/');
+          } else {
+            //i tutaj potem tak przerobić żeby przekierowywało do strony z komunikatem o tym błędzie, tej łądnej
+            res.send("To anime już jest w wewnętrznej bazie danych!");
+          }
+          
+        } else if (Object.values(api_request_response)[1] == 'HttpException') {
+        //błąd typu 404 
+          res.render('db_default_view', {subsite_title: "Błąd", paragraph_content: `Wystąpił błąd typu HTTP przy próbie zapytania do API. Kod błędu: ${Object.values(api_request_response)[0]}`});
+        } else if (Object.values(api_request_response)[1] == 'BadResponseException'){
+          res.render('db_default_view', {subsite_title: "Błąd", paragraph_content: `Wystąpił błąd typu HTTP przy próbie zapytania do API. Kod błędu: ${Object.values(api_request_response)[0]}. Dodatkowe informacje: ${Object.values(api_request_response)[2]}`});
         } else {
-          //i tutaj potem tak przerobić żeby przekierowywało do strony z komunikatem o tym błędzie, tej łądnej
-          res.send("To anime już jest w wewnętrznej bazie danych!");
+          res.render('db_default_view', {subsite_title: "Błąd", paragraph_content: 'Wystąpił nieznany błąd'});
         }
-        
-      } else if (Object.values(api_request_response)[1] == 'HttpException') {
-      //błąd typu 404 
-        res.render('db_default_view', {subsite_title: "Błąd", paragraph_content: `Wystąpił błąd typu HTTP przy próbie zapytania do API. Kod błędu: ${Object.values(api_request_response)[0]}`});
-      } else if (Object.values(api_request_response)[1] == 'BadResponseException'){
-        res.render('db_default_view', {subsite_title: "Błąd", paragraph_content: `Wystąpił błąd typu HTTP przy próbie zapytania do API. Kod błędu: ${Object.values(api_request_response)[0]}. Dodatkowe informacje: ${Object.values(api_request_response)[2]}`});
       } else {
-        res.render('db_default_view', {subsite_title: "Błąd", paragraph_content: 'Wystąpił nieznany błąd'});
+        //nieznany błąd
+        let paragraph_content = "Wystąpił nieznany błąd przy próbie wystosowania zapytania do API. Możliwe iż jest ono niedostępne w tym momencie."
+        res.render('db_default_view', {subsite_title: "Błąd", paragraph_content: paragraph_content});
       }
     } else {
-      //nieznany błąd
-      let paragraph_content = "Wystąpił nieznany błąd przy próbie wystosowania zapytania do API. Możliwe iż jest ono niedostępne w tym momencie."
-      res.render('db_default_view', {subsite_title: "Błąd", paragraph_content: paragraph_content});
+      res.redirect('/searchAnime');
     }
   } else {
     res.redirect('/searchAnime');
   }
+})
+
+app.get('/refreshStatistics', async function (req, res) {
+  res.redirect('/');
+})
+
+app.get('/animeStatisticsVisualisations', async function (req, res) {
+  res.send("Strona w trakcie budowy");
+})
+
+app.get('/about', async function (req, res) {
+  res.send("Strona w trakcie budowy");
 })
 
 app.listen(port)

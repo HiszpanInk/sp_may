@@ -33,3 +33,9 @@ footer {
     height: 4vh;
     padding-top: 1vh;
 }
+.nav-link-buttons {
+    margin-left: 1%;
+}
+.program-name-navbar {
+    margin-right: 2%;
+}
