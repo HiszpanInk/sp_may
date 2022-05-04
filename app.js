@@ -125,7 +125,6 @@ async function addAnimeToInternalDB(data) {
       'year' : data['year'], 
       'genre' : data['genres']
     };
-    console.log(required_data);
     //trzeba ID znaleźć z tabelek genre, season, type, status
     if(required_data['season'] != "" || typeof required_data['season'] != "undefined" || required_data['season'] != null) required_data['season'] = await getInternalIDByName('season', required_data['season']);
     if(required_data['type'] != "" || typeof required_data['type'] != "undefined" || required_data['type'] != null) required_data['type'] = await getInternalIDByName('type', required_data['type']);
@@ -165,8 +164,15 @@ async function addAnimeToInternalDB(data) {
     //to anime jest już u nas w bazie
     return "this anime already exists in database!"
   }
-  
 }
+
+
+async function removeAnimeFromInternalDB(animeInternalID) {
+  await db_con.query(`DELETE FROM anime WHERE ID_Internal="${animeInternalID}"`);
+}
+
+
+
 //to jest funkcja potrzebna przy tych tabelkach w następnej funckji
 //służy do znajdywania w tabelach status, type i season odpowiednich nazw po polsku
 //table - tabelka, value - wartość po której szukamy, searchBy - kolumna po której szukamy
@@ -229,7 +235,6 @@ async function createSearchResultsTable(searchResultsData) {
     
 
     if(required_data['year'] == null || required_data['year'] == "") {
-     // console.log();
       var newValue_year = "";
       if(value['aired']['from'] == null || value['aired']['from'] == "" || value['aired'] == null || value['aired'] == "") {
         newValue_year = "Nie podano";
@@ -311,8 +316,6 @@ async function createSearchResultsTableFromInternalDB() {
   
  
   for (const [key, value] of Object.entries(data)) {
-    console.log(value);
-     
     let required_data = {
       'internal_id' : value['ID_Internal'], 
       'mal_id' : value['ID_MAL'], 
@@ -427,7 +430,6 @@ app.get('/addAnime', async function (req, res) {
       //sprawdzamy czy zmienna jest obiektem, jeśli ją nie jest to sprawdzamy czy jest stringiem bo jeśli jest to wystąpił błąd
       if(typeof api_request_response == 'object') {
         if(Object.values(api_request_response)[1] !== 'HttpException') {
-          console.log(api_request_response);
           let response_addToDB = await addAnimeToInternalDB(api_request_response["data"]);
           if(response_addToDB == "") {
             res.redirect('/');
@@ -449,12 +451,19 @@ app.get('/addAnime', async function (req, res) {
         let paragraph_content = "Wystąpił nieznany błąd przy próbie wystosowania zapytania do API. Możliwe iż jest ono niedostępne w tym momencie."
         res.render('db_default_view', {subsite_title: "Błąd", paragraph_content: paragraph_content});
       }
-    } else {
-      res.redirect('/searchAnime');
-    }
-  } else {
-    res.redirect('/searchAnime');
-  }
+    } 
+  } 
+  res.redirect('/searchAnime');
+  
+})
+
+app.get('/removeAnime', async function (req, res) {
+  if (typeof req.query.anime_internal_id !== 'undefined') {
+    if(req.query.anime_internal_id != "") {
+      await removeAnimeFromInternalDB(req.query.anime_internal_id);
+    } 
+  } 
+  res.redirect('/');
 })
 
 app.get('/refreshStatistics', async function (req, res) {
