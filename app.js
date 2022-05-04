@@ -420,11 +420,39 @@ app.get('/hw', function (req, res) {
   res.send('Hello World');
 })
 
-app.get('/', async function (req, res) {
+app.get('/list', async function (req, res) {
   let paragraph_content = "";
   paragraph_content += await createSearchResultsTableFromInternalDB();
   paragraph_content += "<a href='/refreshAnimeStatistics'><button class='btn btn-info'>Odśwież statystyki</button></a>";
-  res.render('db_default_view', {subsite_title: 'Lista', paragraph_content: paragraph_content});
+  if(typeof req.query.popup !== 'undefined') {
+    if(req.query.popup == 'true') {
+      let popup_html = `<div class="py-2">
+      <div class="modal" id="test">
+          <div class="modal-dialog">
+              <div class="modal-content">
+                  <div class="modal-header">
+                      <h5 class="modal-title">Modal title</h5>
+                      <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                  </div>
+                  <div class="modal-body">
+                      <p>Statystyki w bazie danych zostały zaktualizowane</p>
+                  </div>
+                  <div class="modal-footer">
+                      <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Zamknij</button>
+                  </div>
+              </div>
+          </div>
+      </div>
+      </div>
+      <script>
+      var myModal = new bootstrap.Modal(document.getElementById('test'), {})
+      myModal.toggle()
+      </script>`
+      res.render('db_default_view', {subsite_title: 'Lista', paragraph_content: paragraph_content, optional_popup: popup_html});
+    }
+  } else {
+    res.render('db_default_view', {subsite_title: 'Lista', paragraph_content: paragraph_content});
+  }
 })
 
 app.get('/searchAnime', async function (req, res) {
@@ -464,7 +492,7 @@ app.get('/addAnime', async function (req, res) {
         if(Object.values(api_request_response)[1] !== 'HttpException') {
           let response_addToDB = await addAnimeToInternalDB(api_request_response["data"]);
           if(response_addToDB == "") {
-            res.redirect('/');
+            res.redirect('/list');
           } else {
             //i tutaj potem tak przerobić żeby przekierowywało do strony z komunikatem o tym błędzie, tej łądnej
             res.send("To anime już jest w wewnętrznej bazie danych!");
@@ -497,12 +525,12 @@ app.get('/removeAnime', async function (req, res) {
       await removeAnimeFromInternalDB(req.query.anime_internal_id);
     } 
   } 
-  res.redirect('/');
+  res.redirect('/list');
 })
 
 app.get('/refreshAnimeStatistics', async function (req, res) {
   await refreshStatisticsInInternalDB();
-  res.redirect('/');
+  res.redirect('/list?popup=true');
 })
 
 app.get('/animeStatisticsVisualisations', async function (req, res) {
