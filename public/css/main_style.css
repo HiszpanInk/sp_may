@@ -39,3 +39,6 @@ footer {
 .program-name-navbar {
     margin-right: 2%;
 }
+select {
+    max-width: 20%;
+}

@@ -6,6 +6,7 @@ const path = require('path');
 const express = require('express')
 const fetch = require('node-fetch');
 const util = require("util"); 
+
 //https://www.npmjs.com/package/table-sort-js
 const app = express()
 
@@ -412,12 +413,45 @@ async function refreshStatisticsInInternalDB() {
   }
 }
 
-
+function ConvertInternalDB_Data_ForPlot(SQL_Data) {
+  finalData = {
+    Title: [],//dane do osi x
+    Avg_Rating: [], //dane główne
+    Viewers_Count: [], //dane główne
+    Episodes_Count: [], //dane główne
+    Year_Broadcast: [], //dane główne
+    Genre: [], //filtry
+    Status_ID: [], //filtry
+    Type: [], //filtry
+    ID_Internal: [] //dane pomocnicze
+  }
+  let entry;
+  let entryIndex;
+  for (const [key, value] of Object.entries(SQL_Data)) {
+    entryIndex = [key, value][0];
+    entry = [key, value][1];
+  
+    finalData['Title'][entryIndex] = entry['Title'];
+    finalData['Avg_Rating'][entryIndex] = entry['Avg_Rating'];
+    finalData['Viewers_Count'][entryIndex] = entry['Viewers_Count'];
+    finalData['Episodes_Count'][entryIndex] = entry['Episodes_Count'];
+    finalData['Genre'][entryIndex] = entry['Genre'];
+    finalData['Year_Broadcast'][entryIndex] = entry['Year_Broadcast'];
+    finalData['Status_ID'][entryIndex] = entry['Status_ID'];
+    finalData['Type'][entryIndex] = entry['Type'];
+    finalData['ID_Internal'][entryIndex] = entry['ID_Internal'];
+  }
+  return finalData;
+}
 
 
 
 app.get('/hw', function (req, res) {
   res.send('Hello World');
+})
+
+app.get('/', function (req, res) {
+  res.redirect('/list');
 })
 
 app.get('/list', async function (req, res) {
@@ -534,7 +568,51 @@ app.get('/refreshAnimeStatistics', async function (req, res) {
 })
 
 app.get('/animeStatisticsVisualisations', async function (req, res) {
-  res.send("Strona w trakcie budowy");
+  //Załadowywanie danych z bazy danych
+  
+  let anime_data = await db_con.query("SELECT `ID_Internal`, `Title`, `Status_ID`, `Avg_Rating`, `Viewers_Count`, `Episodes_Count`, `Year_Broadcast`, `Season`, `Type`, `Genre` FROM `anime`;");
+  let status_names = await db_con.query("SELECT `ID`, `Name_PL` FROM `status`;");
+  let type_names = await db_con.query("SELECT `ID`, `Name_PL` FROM `type`;");
+  let genre_names = await db_con.query("SELECT `ID`, `Name_PL` FROM `genre`;");
+  let season_names = await db_con.query("SELECT `ID`, `Name_PL` FROM `season`;");
+  let DB_Data = await ConvertInternalDB_Data_ForPlot(anime_data);
+
+  let additional_external_js_toload = '';
+  additional_external_js_toload += '<script src="https://cdn.plot.ly/plotly-2.12.0.min.js"></script>';
+  additional_external_js_toload += '<script src="js/generatePlotlyPlot.js"></script>';
+  additional_external_js_toload += `<script>
+    let data = ${JSON.stringify(anime_data)};
+    let status_names = ${JSON.stringify(status_names)};
+    let type_names = ${JSON.stringify(type_names)};
+    let genre_names = ${JSON.stringify(genre_names)};
+    let season_names = ${JSON.stringify(season_names)};
+  </script>`;
+
+
+  let paragraph_content = `
+  <label for="compareBy">Wybierz dane do porównywania:</label>
+  <select id="compareBy" class="form-select" name="compareBy">
+    <option value="Avg_Rating">Średnia ocen</option>
+    <option value="Viewers_Count" selected>Liczba widzów</option>
+    <option value="Episodes_Count">Liczba odcinków</option>
+    <option value="Year_Broadcast">Rok emisji</option>
+  </select><br>
+  <label for="plotType">Wybierz typ wykresu:</label>
+  <select id="plotType" class="form-select" name="plotType">
+    <option value="bar" selected>Słupkowy</option>
+    <option value="bubble">Bąbelkowy</option>
+  </select><br>
+
+  <label for="orderType">Wybierz tryb sortowania:</label>
+  <select class="form-select" id="orderType" name="orderType">
+    <option value="default" selected>Domyślnie</option>
+    <option value="ascending">Rosnąco</option>
+    <option value="descending">Malejąco</option>
+  </select><br><br>
+  <button class="btn btn-primary program-name-navbar" onclick="generatePlot()">Utwórz wykres</button>
+  <button class="btn btn-info" onclick="document.getElementById('plotField').innerHTML='';">Wyczyść pole wykresu</button>
+  <div id="plotField">Tu jeszcze coś będzie</div>`;
+  res.render('db_default_view', {additional_external_js_toload: additional_external_js_toload, subsite_title: 'Statystyki', paragraph_content: paragraph_content});
 })
 
 app.get('/about', async function (req, res) {

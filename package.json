@@ -4,7 +4,7 @@
     "liquidjs": "^9.37.0",
     "mysql": "^2.18.1",
     "node-fetch": "^2.6.7",
-    "plotly.js-dist-min": "^2.11.1",
+    "plotly": "^1.0.6",
     "util": "^0.12.4"
   },
   "name": "sp_may",
