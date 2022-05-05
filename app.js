@@ -611,7 +611,6 @@ app.get('/animeStatisticsVisualisations', async function (req, res) {
     <option value="Avg_Rating">Średnia ocen</option>
     <option value="Viewers_Count" selected>Liczba widzów</option>
     <option value="Episodes_Count">Liczba odcinków</option>
-    <option value="Year_Broadcast">Rok emisji</option>
   </select><br>
   <label for="plotType">Wybierz typ wykresu:</label>
   <select id="plotType" class="form-select" name="plotType">
@@ -625,6 +624,12 @@ app.get('/animeStatisticsVisualisations', async function (req, res) {
     <option value="default" selected>Domyślnie</option>
     <option value="ascending">Rosnąco</option>
     <option value="descending">Malejąco</option>
+  </select><br>
+
+  <label for="colouringType">Wybierz tryb kolorowanie słupków:</label>
+  <select class="form-select" id="colouringType" name="colouringType">
+    <option value="default" selected>Domyślny</option>
+    <option value="colourful">Kolorowy</option>
   </select><br><br>
   <button class="btn btn-primary program-name-navbar" onclick="generatePlot(animeData, additionalAnimeData)">Utwórz wykres</button>
   <button class="btn btn-info" onclick="document.getElementById('plotField').innerHTML='';">Wyczyść pole wykresu</button>

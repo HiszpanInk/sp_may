@@ -42,6 +42,11 @@ footer {
 }
 select {
     max-width: 20%;
+    transform: translateY(-5px);
+}
+label {
+    float: left;
+    margin-right: 7px;
 }
 #plotField {
     min-height: 75vh;
