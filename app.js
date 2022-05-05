@@ -577,15 +577,31 @@ app.get('/animeStatisticsVisualisations', async function (req, res) {
   let season_names = await db_con.query("SELECT `ID`, `Name_PL` FROM `season`;");
   let DB_Data = await ConvertInternalDB_Data_ForPlot(anime_data);
 
+  let additionalAnimeDataRaw = {
+    status: status_names,
+    type: type_names,
+    genre: genre_names,
+    season: season_names
+  }
+  let additionalAnimeData = {
+    status: [],
+    type: [],
+    genre: [],
+    season: []
+  }
+  for (const [key_outer, value_outer] of Object.entries(additionalAnimeDataRaw)) {
+    for (const [key, value] of Object.entries([key_outer, value_outer][1])) {
+      additionalAnimeData[key_outer][value['ID']] = value['Name_PL'];
+    }
+  }
+
+
   let additional_external_js_toload = '';
   additional_external_js_toload += '<script src="https://cdn.plot.ly/plotly-2.12.0.min.js"></script>';
   additional_external_js_toload += '<script src="js/generatePlotlyPlot.js"></script>';
   additional_external_js_toload += `<script>
-    let data = ${JSON.stringify(anime_data)};
-    let status_names = ${JSON.stringify(status_names)};
-    let type_names = ${JSON.stringify(type_names)};
-    let genre_names = ${JSON.stringify(genre_names)};
-    let season_names = ${JSON.stringify(season_names)};
+    let animeData = JSON.parse('${JSON.stringify(DB_Data)}');
+    let additionalAnimeData = JSON.parse('${JSON.stringify(additionalAnimeData)}');
   </script>`;
 
 
@@ -609,9 +625,9 @@ app.get('/animeStatisticsVisualisations', async function (req, res) {
     <option value="ascending">Rosnąco</option>
     <option value="descending">Malejąco</option>
   </select><br><br>
-  <button class="btn btn-primary program-name-navbar" onclick="generatePlot()">Utwórz wykres</button>
+  <button class="btn btn-primary program-name-navbar" onclick="generatePlot(animeData, additionalAnimeData)">Utwórz wykres</button>
   <button class="btn btn-info" onclick="document.getElementById('plotField').innerHTML='';">Wyczyść pole wykresu</button>
-  <div id="plotField">Tu jeszcze coś będzie</div>`;
+  <div id="plotField"></div>`;
   res.render('db_default_view', {additional_external_js_toload: additional_external_js_toload, subsite_title: 'Statystyki', paragraph_content: paragraph_content});
 })
 

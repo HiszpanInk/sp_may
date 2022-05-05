@@ -27,7 +27,8 @@ main {
     margin-right: 2.5vw;
     padding-top: 10px;
     padding-bottom: 10px;
-
+    display: flex;
+    flex-flow: column;
 }
 footer {
     height: 4vh;
@@ -41,4 +42,7 @@ footer {
 }
 select {
     max-width: 20%;
+}
+#plotField {
+    flex-grow: 1;
 }
