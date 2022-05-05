@@ -616,6 +616,7 @@ app.get('/animeStatisticsVisualisations', async function (req, res) {
   <label for="plotType">Wybierz typ wykresu:</label>
   <select id="plotType" class="form-select" name="plotType">
     <option value="bar" selected>Słupkowy</option>
+    <option value="bar-vertical">Słupkowy poziomy (horyzontalny)</option>
     <option value="bubble">Bąbelkowy</option>
   </select><br>
 
@@ -627,7 +628,7 @@ app.get('/animeStatisticsVisualisations', async function (req, res) {
   </select><br><br>
   <button class="btn btn-primary program-name-navbar" onclick="generatePlot(animeData, additionalAnimeData)">Utwórz wykres</button>
   <button class="btn btn-info" onclick="document.getElementById('plotField').innerHTML='';">Wyczyść pole wykresu</button>
-  <div id="plotField"></div>`;
+  <p id="plotField"></p>`;
   res.render('db_default_view', {additional_external_js_toload: additional_external_js_toload, subsite_title: 'Statystyki', paragraph_content: paragraph_content});
 })
 

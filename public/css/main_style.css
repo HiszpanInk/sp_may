@@ -44,5 +44,6 @@ select {
     max-width: 20%;
 }
 #plotField {
-    flex-grow: 1;
+    min-height: 75vh;
+    flex-grow : 1;
 }
