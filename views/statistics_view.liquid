@@ -37,35 +37,36 @@
         <h3>{{ subsite_title }}</h3><br><br>
         <div>
             <div id="statsMainControl"  class="statsControl">
+            <form>
             <h4>Główne parametry wykresu</h4><br><br>
-                <label for="compareBy">Wybierz dane do porównywania:</label>
+                <label for="compareBy">Wybierz dane do porównywania:</label><br>
                 <select id="compareBy" class="form-select" name="compareBy">
                     <option value="Avg_Rating">Średnia ocen</option>
                     <option value="Viewers_Count" selected>Liczba widzów</option>
                     <option value="Episodes_Count">Liczba odcinków</option>
                     <option value="Year_Broadcast">Rok emisji</option>
                 </select><br>
-                <label for="plotType">Wybierz typ wykresu:</label>
+                <label for="plotType">Wybierz typ wykresu:</label><br>
                 <select id="plotType" onchange="piePlotSelection()" class="form-select" name="plotType">
                     <option value="bar" selected>Słupkowy</option>
                     <option value="bar-vertical">Słupkowy poziomy (horyzontalny)</option>
                     <option value="pie">Kołowy</option>
                 </select><br>
 
-                <label for="orderType">Wybierz tryb sortowania:</label>
+                <label for="orderType">Wybierz tryb sortowania:</label><br>
                 <select class="form-select" id="orderType" name="orderType">
                     <option value="default" selected>Domyślnie</option>
                     <option value="ascending">Rosnąco</option>
                     <option value="descending">Malejąco</option>
                 </select><br>
 
-                <label for="colouringType">Wybierz tryb kolorowanie słupków:</label>
+                <label for="colouringType">Wybierz tryb kolorowanie słupków:</label><br>
                 <select class="form-select" id="colouringType" name="colouringType">
                     <option value="default" selected>Domyślny</option>
                     <option value="colourful">Kolorowy</option>
                 </select><br><br>
                 <button class="btn btn-primary program-name-navbar" onclick="generatePlot(animeData, additionalAnimeData)">Utwórz wykres</button>
-                <button class="btn btn-info" onclick="document.getElementById('plotField').innerHTML='';">Wyczyść pole wykresu</button>
+                <button class="btn btn-info" type="reset" onclick="document.getElementById('plotField').innerHTML='';">Wyczyść pole wykresu</button>
             </div>
 
             <div class="statsControl">
@@ -76,6 +77,7 @@
 
             </div>
         </div>
+        </form>
         <div id="plotField"></div>
     </main>
     {{ optional_popup }}

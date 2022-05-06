@@ -15,3 +15,6 @@ select {
     min-height: 75vh;
     flex-grow : 1;
 }
+label {
+    margin-bottom: 10px;
+}

@@ -16,7 +16,7 @@ header {
     width: 20%;
     float: left;
 }
-form {
+header > form {
     width: 40%;
 }
 main {

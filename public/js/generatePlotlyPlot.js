@@ -7,7 +7,17 @@ function selectElement(id, valueToSelect) {
     let element = document.getElementById(id);
     element.value = valueToSelect;
 }
-
+function checkForYearRangeConflict(min, max) {
+    if((isNaN(min)) && (max != null || max != 0 || max != "")) {
+        return true;
+    } else if((isNaN(max)) && (min != null || min != 0 || min != "")) {
+        return true;
+    } else if (min < max) {
+        return true;
+    } else {
+        return false;
+    }
+}
 function piePlotSelection() {
     switch(document.getElementById("plotType").value) {
         case "pie":
@@ -41,7 +51,7 @@ function generatePlot(mainData, additionalData) {
     //część odpowiedzialna za filtry
     let filterYearRangeMin = parseInt(document.getElementById('filterYearRangeMin').value);
     let filterYearRangeMax = parseInt(document.getElementById('filterYearRangeMax').value);
-    if(filterYearRangeMin <= filterYearRangeMax) {
+    if(checkForYearRangeConflict(filterYearRangeMin, filterYearRangeMax)) {
         let toClearList = [];
         if((filterYearRangeMin != null || filterYearRangeMin != "") && (filterYearRangeMin >= 1850)) {
             for (let i = 0; i < itemsNum; i++) {
