@@ -239,46 +239,7 @@ function generatePlot(mainData, additionalData) {
     let second;
     let sortingLength;
     let title_order = "";
-    switch(orderBy) {
-        case "ascending":
-            //to nie działa poprawnie jak są puste wartości
-            //layout[`${primaryAxis}axis`]['categoryorder'] = 'total ascending';
-            first = [...(data[0][dataAxis])];
-            second = [...(data[0][primaryAxis])];
-            sortingLength = first.length;
-            for (let i = 0; i < sortingLength; i++) {
-                dataAxisData[`${second[i]}`] = first[i];
-            }
-            //dataAxisData = (data[0][dataAxis]).entries();
-            dataAxisData = Object.fromEntries(
-                Object.entries(dataAxisData).sort(([,a],[,b]) => a-b)
-            );
-            
-            data[0][dataAxis] = Object.values(dataAxisData); 
-            data[0][primaryAxis] = Object.keys(dataAxisData); 
-
-            title_order = "<br>Dane uporządkowane rosnąco";
-            break;
-        case "descending":
-            //to nie działa poprawnie jak są puste wartości
-            //layout[`${primaryAxis}axis`]['categoryorder'] = 'total descending';
-            first = [...(data[0][dataAxis])];
-            second = [...(data[0][primaryAxis])];
-            sortingLength = first.length;
-            for (let i = 0; i < sortingLength; i++) {
-                dataAxisData[`${second[i]}`] = first[i];
-            }
-            //dataAxisData = (data[0][dataAxis]).entries();
-            dataAxisData = Object.fromEntries(
-                Object.entries(dataAxisData).sort(([,a],[,b]) => a-b)
-            );
-            
-            data[0][dataAxis] = (Object.values(dataAxisData)).reverse(); 
-            data[0][primaryAxis] = (Object.keys(dataAxisData)).reverse(); 
-
-            title_order = "<br>Dane uporządkowane malejąco";
-            break;
-    }
+    
     if(plotType == "bar-vertical") {
         layout[`${primaryAxis}axis`]['autorange'] = 'reversed';
     }
@@ -296,6 +257,43 @@ function generatePlot(mainData, additionalData) {
     }  
     title += title_filter;
     title += title_order;
+    
+    switch(orderBy) {
+        case "ascending":
+            first = [...(data[0][dataAxis])];
+            second = [...(data[0][primaryAxis])];
+            sortingLength = first.length;
+            for (let i = 0; i < sortingLength; i++) {
+                dataAxisData[`${second[i]}`] = first[i];
+            }
+            //dataAxisData = (data[0][dataAxis]).entries();
+            dataAxisData = Object.fromEntries(
+                Object.entries(dataAxisData).sort(([,a],[,b]) => a-b)
+            );
+            
+            data[0][dataAxis] = Object.values(dataAxisData); 
+            data[0][primaryAxis] = Object.keys(dataAxisData); 
+
+            title_order = "<br>Dane uporządkowane rosnąco";
+            break;
+        case "descending":
+            first = [...(data[0][dataAxis])];
+            second = [...(data[0][primaryAxis])];
+            sortingLength = first.length;
+            for (let i = 0; i < sortingLength; i++) {
+                dataAxisData[`${second[i]}`] = first[i];
+            }
+            //dataAxisData = (data[0][dataAxis]).entries();
+            dataAxisData = Object.fromEntries(
+                Object.entries(dataAxisData).sort(([,a],[,b]) => a-b)
+            );
+            
+            data[0][dataAxis] = (Object.values(dataAxisData)).reverse(); 
+            data[0][primaryAxis] = (Object.keys(dataAxisData)).reverse(); 
+
+            title_order = "<br>Dane uporządkowane malejąco";
+            break;
+    }
     if(plotType != "pie") {
         for (let i = 0; i < (data[0]['x']).length; i++) {
             if(data[0]['x'][i] == 'undefined' || typeof data[0]['x'][i] == 'undefined') {
@@ -309,5 +307,14 @@ function generatePlot(mainData, additionalData) {
             }
         }
     }
+    switch(orderBy) {
+        case "ascending":
+            layout[`${primaryAxis}axis`]['categoryorder'] = 'total ascending';
+            break;
+        case "descending":
+            layout[`${primaryAxis}axis`]['categoryorder'] = 'total descending';
+            break;
+    }
+    console.log(data);
     Plotly.newPlot('plotField', data, layout, config);
 }
