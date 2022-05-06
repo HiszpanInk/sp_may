@@ -37,15 +37,16 @@
         <h3>{{ subsite_title }}</h3><br><br>
         <div>
             <div id="statsMainControl"  class="statsControl">
-            <form>
+            <form action="javascript:void(0);">
             <h4>Główne parametry wykresu</h4><br><br>
                 <label for="compareBy">Wybierz dane do porównywania:</label><br>
-                <select id="compareBy" class="form-select" name="compareBy">
+                <select id="compareBy" onchange='ratingCheckbox();' class="form-select" name="compareBy">
                     <option value="Avg_Rating">Średnia ocen</option>
                     <option value="Viewers_Count" selected>Liczba widzów</option>
                     <option value="Episodes_Count">Liczba odcinków</option>
                     <option value="Year_Broadcast">Rok emisji</option>
-                </select><br>
+                </select>
+                <p id="additionalCheckboxSection"></p>
                 <label for="plotType">Wybierz typ wykresu:</label><br>
                 <select id="plotType" onchange="piePlotSelection()" class="form-select" name="plotType">
                     <option value="bar" selected>Słupkowy</option>

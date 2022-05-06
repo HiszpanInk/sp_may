@@ -8,7 +8,9 @@ function selectElement(id, valueToSelect) {
     element.value = valueToSelect;
 }
 function checkForYearRangeConflict(min, max) {
-    if((isNaN(min)) && (max != null || max != 0 || max != "")) {
+    if(isNaN(min) && isNaN(max)) {
+        return false;
+    } else if((isNaN(min)) && (max != null || max != 0 || max != "")) {
         return true;
     } else if((isNaN(max)) && (min != null || min != 0 || min != "")) {
         return true;
@@ -18,6 +20,14 @@ function checkForYearRangeConflict(min, max) {
         return false;
     }
 }
+function ratingCheckbox() {
+    if(document.getElementById("compareBy").value == 'Avg_Rating') { 
+        document.getElementById('additionalCheckboxSection').innerHTML = '<input class="form-check-input" type="checkbox" style="margin-right: 5px;" id="checkboxAverageRating" checked><label class="form-check-label" for="checkboxAverageRating"> Ograniczyć dolny zakres?</label>';
+    } else {
+        document.getElementById('additionalCheckboxSection').innerHTML = "";
+    }
+}
+
 function piePlotSelection() {
     switch(document.getElementById("plotType").value) {
         case "pie":
@@ -30,7 +40,6 @@ function piePlotSelection() {
             document.getElementById("orderType").disabled = false;
             document.getElementById("colouringType").disabled = false;
             document.getElementById("compareBy").disabled = false;
-            selectElement("compareBy", "Year_Broadcast");
             break;
     }
 }
@@ -48,17 +57,30 @@ function generatePlot(mainData, additionalData) {
     let primaryAxis;
     let secondaryAxis;
 
+    let avgRating_CutRange;
+    if(document.getElementById('additionalCheckboxSection').innerHTML != "") {
+        console.log(document.getElementById('checkboxAverageRating').checked);
+        if(document.getElementById('checkboxAverageRating').checked == true) {
+            avgRating_CutRange = true;
+        }
+    
+    }
+
+
     //część odpowiedzialna za filtry
+    let title_filter = "";
     let filterYearRangeMin = parseInt(document.getElementById('filterYearRangeMin').value);
     let filterYearRangeMax = parseInt(document.getElementById('filterYearRangeMax').value);
     if(checkForYearRangeConflict(filterYearRangeMin, filterYearRangeMax)) {
         let toClearList = [];
+        title_filter = " emitowanego w latach";
         if((filterYearRangeMin != null || filterYearRangeMin != "") && (filterYearRangeMin >= 1850)) {
             for (let i = 0; i < itemsNum; i++) {
                 if(Number(mainDataCopy['Year_Broadcast'][i]) < Number(filterYearRangeMin)) {        
                     toClearList.push(i);
                 }
             }
+            title_filter += ` od ${filterYearRangeMin}`;
         }
         for (const toClear of toClearList) {
             for (const [key, value] of Object.entries(mainDataCopy)) {
@@ -72,6 +94,7 @@ function generatePlot(mainData, additionalData) {
                     toClearList.push(i);
                 }
             }
+            title_filter += ` do ${filterYearRangeMax}`;
         }
         for (const toClear of toClearList) {
             for (const [key, value] of Object.entries(mainDataCopy)) {
@@ -150,23 +173,30 @@ function generatePlot(mainData, additionalData) {
     }
     switch(compareBy) {
         case "Avg_Rating":
-            //bierzemy minimalną wartość, zaokrąglamy ją w dół i obniżamy o jeden
-            let minRange = Math.ceil(Math.min.apply(Math, Object.values(mainDataCopy['Avg_Rating']))) - 1;
-            if(minRange < 0) minRange = 0;
+            let minRange = 0;
+            if(avgRating_CutRange == true) {
+                //bierzemy minimalną wartość, zaokrąglamy ją w dół i obniżamy o jeden
+                minRange = Math.ceil(Math.min.apply(Math, Object.values(mainDataCopy['Avg_Rating']))) - 1;
+                //jeżeli wartość wyżej będzie poniżej 0 (co raczej nie wystąpi ale na wszelki wypadek)
+                //to wtedy ustawiamy dolny zakres na 0
+                if(minRange < 0) minRange = 0;
+            }
+            
             layout[`${secondaryAxis}axis`]['range'] = [minRange, 10];
-            title = "Średnia ocena dla każdej serii anime w bazie"
+            title = "Średnia ocena"
             break;
         case "Viewers_Count":
-            title = "Ilość widzów dla każdej serii anime w bazie"
+            title = "Ilość widzów"
             break;
         case "Episodes_Count":
-            title = "Ilość odcinków dla każdej serii anime w bazie"
+            title = "Ilość odcinków"
             break;
         case "Year_Broadcast":
-            title = "Rok emisji dla każdej serii anime w bazie"
+            title = "Rok emisji"
             break;
     
     }
+    title += " dla każdej serii anime z bazy danych";
     switch(orderBy) {
         case "ascending":
             layout[`${primaryAxis}axis`]['categoryorder'] = 'total ascending';
@@ -187,6 +217,7 @@ function generatePlot(mainData, additionalData) {
             data[0]['marker'] = { color: colours }
             break;
     }
+    title += title_filter;
     if(plotType != "pie") layout['title'] = title;
     var config = {
         responsive: true
