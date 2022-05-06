@@ -255,8 +255,7 @@ function generatePlot(mainData, additionalData) {
     var config = {
         responsive: true
     }  
-    title += title_filter;
-    title += title_order;
+    
     
     switch(orderBy) {
         case "ascending":
@@ -315,6 +314,8 @@ function generatePlot(mainData, additionalData) {
             layout[`${primaryAxis}axis`]['categoryorder'] = 'total descending';
             break;
     }
-    console.log(data);
+    title += title_filter;
+    title += title_order;
+    layout['title'] = title;
     Plotly.newPlot('plotField', data, layout, config);
 }
