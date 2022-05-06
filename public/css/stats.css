@@ -1,0 +1,16 @@
+.statsConfig {
+    width: 50%;
+    float: left;
+}
+select {
+    max-width: 20%;
+    transform: translateY(-5px);
+}
+label {
+    float: left;
+    margin-right: 7px;
+}
+#plotField {
+    min-height: 75vh;
+    flex-grow : 1;
+}

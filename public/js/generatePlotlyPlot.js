@@ -2,7 +2,27 @@ function getRandomInt(min, max) {
     min = Math.ceil(min);
     max = Math.floor(max);
     return Math.floor(Math.random() * (max - min)) + min;
-  }
+}
+function selectElement(id, valueToSelect) {    
+    let element = document.getElementById(id);
+    element.value = valueToSelect;
+}
+function piePlotSelection() {
+    switch(document.getElementById("plotType").value) {
+        case "pie":
+            document.getElementById("orderType").disabled = true;
+            document.getElementById("colouringType").disabled = true;
+            selectElement("compareBy", "Year_Broadcast");
+            document.getElementById("compareBy").disabled = true;
+            break;
+        default:
+            document.getElementById("orderType").disabled = false;
+            document.getElementById("colouringType").disabled = false;
+            document.getElementById("compareBy").disabled = false;
+            selectElement("compareBy", "Year_Broadcast");
+            break;
+    }
+}
 //mainData pochodzi z tabeli anime, additionalData to dane z innych tabel które mają nazwy rzeczy które są w tabelce anime jako klucz obcy
 function generatePlot(mainData, additionalData) {
     let compareBy = document.getElementById('compareBy').value;
@@ -13,6 +33,7 @@ function generatePlot(mainData, additionalData) {
     let layout;
     let primaryAxis;
     let secondaryAxis;
+    let title = null;
     switch(plotType) {
         case "bar":
             primaryAxis = "x";
@@ -26,7 +47,7 @@ function generatePlot(mainData, additionalData) {
                 }
             ];
             layout = {
-                //title: 'Wykresbc',
+                title: null,
                 automargin: true,
                 margin: {b: 250},
                 xaxis: {
@@ -49,7 +70,7 @@ function generatePlot(mainData, additionalData) {
                 }
             ];
             layout = {
-                //title: 'Wykresbc',
+                title: null,
                 automargin: true,
                 margin: {l: 350},
                 yaxis: {
@@ -59,19 +80,28 @@ function generatePlot(mainData, additionalData) {
                 xaxis: {}
             }
             break;
-        case "bubble":
-    }
-    switch(orderBy) {
-        case "ascending":
-            layout[`${primaryAxis}axis`]['categoryorder'] = 'total ascending';
+        case "pie":
+            let years = mainData['Year_Broadcast'];
+            let years_counts = {};
+
+            for (const num of years) {
+                years_counts[num] = years_counts[num] ? years_counts[num] + 1 : 1;
+            }
+            primaryAxis = "x";
+            secondaryAxis = "y";
+            data = [{
+                values: Object.values(years_counts),
+                labels: Object.keys(years_counts),
+                type: 'pie'
+              }];
+            layout = {
+                title: 'Ilość anime w bazie danych zagregowane według daty produkcji',
+                automargin: true,
+                margin: {b: 100},
+            }
             break;
-        case "descending":
-            layout[`${primaryAxis}axis`]['categoryorder'] = 'total descending';
-            break;
     }
-    if(plotType == "bar-vertical" && orderBy != "default") {
-        layout[`${primaryAxis}axis`]['autorange'] = 'reversed';
-    }
+    
 
 
     switch(compareBy) {
@@ -81,7 +111,28 @@ function generatePlot(mainData, additionalData) {
             if(minRange < 0) minRange = 0;
             console.log(minRange);
             layout[`${secondaryAxis}axis`]['range'] = [minRange, 10];
+            title = "Średnia ocena dla każdej serii anime w bazie"
             break;
+        case "Viewers_Count":
+            title = "Ilość widzów dla każdej serii anime w bazie"
+            break;
+        case "Episodes_Count":
+            title = "Ilość odcinków dla każdej serii anime w bazie"
+            break;
+    
+    }
+    switch(orderBy) {
+        case "ascending":
+            layout[`${primaryAxis}axis`]['categoryorder'] = 'total ascending';
+            title += " uporządkowana rosnąco"
+            break;
+        case "descending":
+            layout[`${primaryAxis}axis`]['categoryorder'] = 'total descending';
+            title += " uporządkowana malejąco"
+            break;
+    }
+    if(plotType == "bar-vertical" && orderBy != "default") {
+        layout[`${primaryAxis}axis`]['autorange'] = 'reversed';
     }
     switch(colouringType) {
         case "colourful":
@@ -90,10 +141,9 @@ function generatePlot(mainData, additionalData) {
             data[0]['marker'] = { color: colours }
             break;
     }
-    
+    if(plotType != "pie") layout['title'] = title;
     var config = {
         responsive: true
     }
-    console.log(data);
     Plotly.newPlot('plotField', data, layout, config);
 }

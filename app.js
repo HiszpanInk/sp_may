@@ -162,7 +162,7 @@ async function addAnimeToInternalDB(data) {
     return "";
   } else {
     //to anime jest już u nas w bazie
-    return "this anime already exists in database!"
+    return [data['title'], "this anime already exists in database!"]
   }
 }
 
@@ -458,9 +458,10 @@ app.get('/list', async function (req, res) {
   let paragraph_content = "";
   paragraph_content += await createSearchResultsTableFromInternalDB();
   paragraph_content += "<a href='/refreshAnimeStatistics'><button class='btn btn-info'>Odśwież statystyki</button></a>";
-  if(typeof req.query.popup !== 'undefined') {
+  if(typeof req.query.popup !== 'undefined' || typeof req.query.alreadyAddedAnimePopup !== 'undefined') {
+    let popup_html = "";
     if(req.query.popup == 'true') {
-      let popup_html = `<div class="py-2">
+      popup_html = `<div class="py-2">
       <div class="modal" id="test">
           <div class="modal-dialog">
               <div class="modal-content">
@@ -470,6 +471,30 @@ app.get('/list', async function (req, res) {
                   </div>
                   <div class="modal-body">
                       <p>Statystyki w bazie danych zostały zaktualizowane</p>
+                  </div>
+                  <div class="modal-footer">
+                      <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Zamknij</button>
+                  </div>
+              </div>
+          </div>
+      </div>
+      </div>
+      <script>
+      var myModal = new bootstrap.Modal(document.getElementById('test'), {})
+      myModal.toggle()
+      </script>`
+      res.render('db_default_view', {subsite_title: 'Lista', paragraph_content: paragraph_content, optional_popup: popup_html});
+    } else if (req.query.alreadyAddedAnimePopup == 'true') {
+      popup_html = `<div class="py-2">
+      <div class="modal" id="test">
+          <div class="modal-dialog">
+              <div class="modal-content">
+                  <div class="modal-header">
+                      <h5 class="modal-title">Modal title</h5>
+                      <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                  </div>
+                  <div class="modal-body">
+                      <p>Anime "${req.query.animeTitle}" już istnieje w bazie danych!</p>
                   </div>
                   <div class="modal-footer">
                       <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Zamknij</button>
@@ -528,8 +553,8 @@ app.get('/addAnime', async function (req, res) {
           if(response_addToDB == "") {
             res.redirect('/list');
           } else {
-            //i tutaj potem tak przerobić żeby przekierowywało do strony z komunikatem o tym błędzie, tej łądnej
-            res.send("To anime już jest w wewnętrznej bazie danych!");
+            res.redirect(`/list?alreadyAddedAnimePopup=true&animeTitle=${response_addToDB[0]}`);
+            
           }
           
         } else if (Object.values(api_request_response)[1] == 'HttpException') {
@@ -596,10 +621,11 @@ app.get('/animeStatisticsVisualisations', async function (req, res) {
   }
 
 
-  let additional_external_js_toload = '';
-  additional_external_js_toload += '<script src="https://cdn.plot.ly/plotly-2.12.0.min.js"></script>';
-  additional_external_js_toload += '<script src="js/generatePlotlyPlot.js"></script>';
-  additional_external_js_toload += `<script>
+  let additional_external_head_content_toload = '';
+  additional_external_head_content_toload += '<link type="text/css" href="css/stats.css" rel="stylesheet">';
+  additional_external_head_content_toload += '<script src="https://cdn.plot.ly/plotly-2.12.0.min.js"></script>';
+  additional_external_head_content_toload += '<script src="js/generatePlotlyPlot.js"></script>';
+  additional_external_head_content_toload += `<script>
     let animeData = JSON.parse('${JSON.stringify(DB_Data)}');
     let additionalAnimeData = JSON.parse('${JSON.stringify(additionalAnimeData)}');
   </script>`;
@@ -611,12 +637,13 @@ app.get('/animeStatisticsVisualisations', async function (req, res) {
     <option value="Avg_Rating">Średnia ocen</option>
     <option value="Viewers_Count" selected>Liczba widzów</option>
     <option value="Episodes_Count">Liczba odcinków</option>
+    <option value="Year_Broadcast">Rok emisji</option>
   </select><br>
   <label for="plotType">Wybierz typ wykresu:</label>
-  <select id="plotType" class="form-select" name="plotType">
+  <select id="plotType" onchange="piePlotSelection()" class="form-select" name="plotType">
     <option value="bar" selected>Słupkowy</option>
     <option value="bar-vertical">Słupkowy poziomy (horyzontalny)</option>
-    <option value="bubble">Bąbelkowy</option>
+    <option value="pie">Kołowy</option>
   </select><br>
 
   <label for="orderType">Wybierz tryb sortowania:</label>
@@ -633,8 +660,12 @@ app.get('/animeStatisticsVisualisations', async function (req, res) {
   </select><br><br>
   <button class="btn btn-primary program-name-navbar" onclick="generatePlot(animeData, additionalAnimeData)">Utwórz wykres</button>
   <button class="btn btn-info" onclick="document.getElementById('plotField').innerHTML='';">Wyczyść pole wykresu</button>
-  <p id="plotField"></p>`;
-  res.render('db_default_view', {additional_external_js_toload: additional_external_js_toload, subsite_title: 'Statystyki', paragraph_content: paragraph_content});
+  `;
+  additional_main_content = `<p class="statsConfig">
+  
+  
+  </p><p id="plotField"></p>`;
+  res.render('db_default_view', {additional_external_js_toload: additional_external_head_content_toload, subsite_title: 'Statystyki', paragraph_content: paragraph_content, additional_main_content : additional_main_content});
 })
 
 app.get('/about', async function (req, res) {
