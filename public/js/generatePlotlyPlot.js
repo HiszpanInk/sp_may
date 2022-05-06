@@ -7,6 +7,7 @@ function selectElement(id, valueToSelect) {
     let element = document.getElementById(id);
     element.value = valueToSelect;
 }
+
 function piePlotSelection() {
     switch(document.getElementById("plotType").value) {
         case "pie":
@@ -24,15 +25,51 @@ function piePlotSelection() {
     }
 }
 //mainData pochodzi z tabeli anime, additionalData to dane z innych tabel które mają nazwy rzeczy które są w tabelce anime jako klucz obcy
+//żeby używać additionalData trzebaby odkomentować 4 linijki w app.js tak żeby zaciągało dane z tamtych tabel
 function generatePlot(mainData, additionalData) {
+    let mainDataCopy = JSON.parse(JSON.stringify(mainData));
     let compareBy = document.getElementById('compareBy').value;
     let plotType = document.getElementById('plotType').value;
     let orderBy = document.getElementById('orderType').value;
     let colouringType = document.getElementById('colouringType').value;
+    let itemsNum = (mainDataCopy['ID_Internal']).length;
     let data;
     let layout;
     let primaryAxis;
     let secondaryAxis;
+
+    //część odpowiedzialna za filtry
+    let filterYearRangeMin = parseInt(document.getElementById('filterYearRangeMin').value);
+    let filterYearRangeMax = parseInt(document.getElementById('filterYearRangeMax').value);
+    if(filterYearRangeMin <= filterYearRangeMax) {
+        let toClearList = [];
+        if((filterYearRangeMin != null || filterYearRangeMin != "") && (filterYearRangeMin >= 1850)) {
+            for (let i = 0; i < itemsNum; i++) {
+                if(Number(mainDataCopy['Year_Broadcast'][i]) < Number(filterYearRangeMin)) {        
+                    toClearList.push(i);
+                }
+            }
+        }
+        for (const toClear of toClearList) {
+            for (const [key, value] of Object.entries(mainDataCopy)) {
+                delete value[toClear];
+            }
+        }
+        toClearList = [];
+        if((filterYearRangeMax != null || filterYearRangeMax != "") && (filterYearRangeMax <= 2200)) {
+            for (let i = 0; i < itemsNum; i++) {
+                if(Number(mainDataCopy['Year_Broadcast'][i]) > Number(filterYearRangeMax)) {        
+                    toClearList.push(i);
+                }
+            }
+        }
+        for (const toClear of toClearList) {
+            for (const [key, value] of Object.entries(mainDataCopy)) {
+                delete value[toClear];
+            }
+        }
+    }
+    
     let title = null;
     switch(plotType) {
         case "bar":
@@ -40,8 +77,8 @@ function generatePlot(mainData, additionalData) {
             secondaryAxis = "y";
             data = [
                 {
-                  x: mainData['Title'],
-                  y: mainData[compareBy],
+                  x: mainDataCopy['Title'],
+                  y: mainDataCopy[compareBy],
                   marker: { color: null },
                   type: 'bar'
                 }
@@ -62,8 +99,8 @@ function generatePlot(mainData, additionalData) {
             secondaryAxis = "x";
             data = [
                 {
-                  y: mainData['Title'],
-                  x: mainData[compareBy],
+                  y: mainDataCopy['Title'],
+                  x: mainDataCopy[compareBy],
                   marker: { color: null },
                   orientation: 'h',
                   type: 'bar'
@@ -81,7 +118,7 @@ function generatePlot(mainData, additionalData) {
             }
             break;
         case "pie":
-            let years = mainData['Year_Broadcast'];
+            let years = mainDataCopy['Year_Broadcast'];
             let years_counts = {};
 
             for (const num of years) {
@@ -101,15 +138,11 @@ function generatePlot(mainData, additionalData) {
             }
             break;
     }
-    
-
-
     switch(compareBy) {
         case "Avg_Rating":
             //bierzemy minimalną wartość, zaokrąglamy ją w dół i obniżamy o jeden
-            let minRange = Math.ceil(Math.min.apply(Math, Object.values(mainData['Avg_Rating']))) - 1;
+            let minRange = Math.ceil(Math.min.apply(Math, Object.values(mainDataCopy['Avg_Rating']))) - 1;
             if(minRange < 0) minRange = 0;
-            console.log(minRange);
             layout[`${secondaryAxis}axis`]['range'] = [minRange, 10];
             title = "Średnia ocena dla każdej serii anime w bazie"
             break;
@@ -118,6 +151,9 @@ function generatePlot(mainData, additionalData) {
             break;
         case "Episodes_Count":
             title = "Ilość odcinków dla każdej serii anime w bazie"
+            break;
+        case "Year_Broadcast":
+            title = "Rok emisji dla każdej serii anime w bazie"
             break;
     
     }
@@ -137,7 +173,7 @@ function generatePlot(mainData, additionalData) {
     switch(colouringType) {
         case "colourful":
             var colours = []; 
-            for (let i = 0; i < (mainData['ID_Internal']).length; i++) colours.push(`rgba(${getRandomInt(3, 250)}, ${getRandomInt(3, 250)}, ${getRandomInt(3, 250)}, 1)`);
+            for (let i = 0; i < (mainDataCopy['ID_Internal']).length; i++) colours.push(`rgba(${getRandomInt(3, 250)}, ${getRandomInt(3, 250)}, ${getRandomInt(3, 250)}, 1)`);
             data[0]['marker'] = { color: colours }
             break;
     }

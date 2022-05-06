@@ -1,12 +1,13 @@
-.statsConfig {
+.statsControl {
     width: 50%;
     float: left;
+    display: block;
 }
 select {
     max-width: 20%;
     transform: translateY(-5px);
 }
-label {
+#statsMainControl > label {
     float: left;
     margin-right: 7px;
 }

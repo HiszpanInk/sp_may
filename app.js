@@ -594,12 +594,18 @@ app.get('/refreshAnimeStatistics', async function (req, res) {
 
 app.get('/animeStatisticsVisualisations', async function (req, res) {
   //Załadowywanie danych z bazy danych
-  
+  let status_names = "";
+  let type_names = "";
+  let genre_names = "";
+  let season_names = "";
+
+
   let anime_data = await db_con.query("SELECT `ID_Internal`, `Title`, `Status_ID`, `Avg_Rating`, `Viewers_Count`, `Episodes_Count`, `Year_Broadcast`, `Season`, `Type`, `Genre` FROM `anime`;");
-  let status_names = await db_con.query("SELECT `ID`, `Name_PL` FROM `status`;");
-  let type_names = await db_con.query("SELECT `ID`, `Name_PL` FROM `type`;");
-  let genre_names = await db_con.query("SELECT `ID`, `Name_PL` FROM `genre`;");
-  let season_names = await db_con.query("SELECT `ID`, `Name_PL` FROM `season`;");
+  //jako iż te dane są nieużywane nie zaciągam ich
+  /*status_names = await db_con.query("SELECT `ID`, `Name_PL` FROM `status`;");
+  type_names = await db_con.query("SELECT `ID`, `Name_PL` FROM `type`;");
+  genre_names = await db_con.query("SELECT `ID`, `Name_PL` FROM `genre`;");
+  season_names = await db_con.query("SELECT `ID`, `Name_PL` FROM `season`;");*/
   let DB_Data = await ConvertInternalDB_Data_ForPlot(anime_data);
 
   let additionalAnimeDataRaw = {
@@ -619,6 +625,7 @@ app.get('/animeStatisticsVisualisations', async function (req, res) {
       additionalAnimeData[key_outer][value['ID']] = value['Name_PL'];
     }
   }
+ 
 
 
   let additional_external_head_content_toload = '';
@@ -630,42 +637,7 @@ app.get('/animeStatisticsVisualisations', async function (req, res) {
     let additionalAnimeData = JSON.parse('${JSON.stringify(additionalAnimeData)}');
   </script>`;
 
-
-  let paragraph_content = `
-  <label for="compareBy">Wybierz dane do porównywania:</label>
-  <select id="compareBy" class="form-select" name="compareBy">
-    <option value="Avg_Rating">Średnia ocen</option>
-    <option value="Viewers_Count" selected>Liczba widzów</option>
-    <option value="Episodes_Count">Liczba odcinków</option>
-    <option value="Year_Broadcast">Rok emisji</option>
-  </select><br>
-  <label for="plotType">Wybierz typ wykresu:</label>
-  <select id="plotType" onchange="piePlotSelection()" class="form-select" name="plotType">
-    <option value="bar" selected>Słupkowy</option>
-    <option value="bar-vertical">Słupkowy poziomy (horyzontalny)</option>
-    <option value="pie">Kołowy</option>
-  </select><br>
-
-  <label for="orderType">Wybierz tryb sortowania:</label>
-  <select class="form-select" id="orderType" name="orderType">
-    <option value="default" selected>Domyślnie</option>
-    <option value="ascending">Rosnąco</option>
-    <option value="descending">Malejąco</option>
-  </select><br>
-
-  <label for="colouringType">Wybierz tryb kolorowanie słupków:</label>
-  <select class="form-select" id="colouringType" name="colouringType">
-    <option value="default" selected>Domyślny</option>
-    <option value="colourful">Kolorowy</option>
-  </select><br><br>
-  <button class="btn btn-primary program-name-navbar" onclick="generatePlot(animeData, additionalAnimeData)">Utwórz wykres</button>
-  <button class="btn btn-info" onclick="document.getElementById('plotField').innerHTML='';">Wyczyść pole wykresu</button>
-  `;
-  additional_main_content = `<p class="statsConfig">
-  
-  
-  </p><p id="plotField"></p>`;
-  res.render('db_default_view', {additional_external_js_toload: additional_external_head_content_toload, subsite_title: 'Statystyki', paragraph_content: paragraph_content, additional_main_content : additional_main_content});
+  res.render('statistics_view', {additional_external_js_toload: additional_external_head_content_toload, subsite_title: 'Statystyki' });
 })
 
 app.get('/about', async function (req, res) {

@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta charset="UTF-8">
+    <title>{{ subsite_title }}</title>
+    <link type="text/css" href="css/main_style.css" rel="stylesheet">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-1BmE4kWBq78iYhFldvKuhfTAU6auU8tT94WrHftjDbrCEXSU1oBoqyl2QvZ6jIW3" crossorigin="anonymous">
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js" integrity="sha384-ka7Sk0Gln4gmtz2MlQnikT1wXgYsOg+OMhuP+IlRH9sENBO0LRn5q+8nbTov4+1p" crossorigin="anonymous"></script>
+    <script src="js/table-sort.js"></script>
+    {{ additional_external_js_toload }}
+</head>
+<body>
+    
+    <header class="bd-header bg-dark py-3 d-flex align-items-stretch border-bottom border-dark">
+        <div class="container-fluid d-flex align-items-center">
+            <h1 class="d-flex align-items-center fs-4 text-white mb-0 program-name-navbar">Poor MAL Version™</h1> 
+            <a class="nav-link-buttons" href="/list"><button class="btn btn-primary">Lista główna</button></a>
+            <a class="nav-link-buttons" href="/animeStatisticsVisualisations"><button class="btn btn-primary ml-5">Statystyki</button></a>
+            <a class="nav-link-buttons" href="/searchAnime"><button class="btn btn-primary">Wyszukiwanie</button></a>
+            <a class="nav-link-buttons" href="/about"><button class="btn btn-primary">O stronie</button></a>
+        
+        </div>
+
+        
+
+        <form method="GET" action="/searchAnime">
+            <input class="form-control" name="searchQuery" type="text" placeholder="Search" id="search_field">
+            <input type="submit" class="btn btn-secondary" value="Szukaj" id="search_field_submit">
+        </form>
+    </header>
+    
+
+    <main>
+        
+        <h3>{{ subsite_title }}</h3><br><br>
+        <div>
+            <div id="statsMainControl"  class="statsControl">
+            <h4>Główne parametry wykresu</h4><br><br>
+                <label for="compareBy">Wybierz dane do porównywania:</label>
+                <select id="compareBy" class="form-select" name="compareBy">
+                    <option value="Avg_Rating">Średnia ocen</option>
+                    <option value="Viewers_Count" selected>Liczba widzów</option>
+                    <option value="Episodes_Count">Liczba odcinków</option>
+                    <option value="Year_Broadcast">Rok emisji</option>
+                </select><br>
+                <label for="plotType">Wybierz typ wykresu:</label>
+                <select id="plotType" onchange="piePlotSelection()" class="form-select" name="plotType">
+                    <option value="bar" selected>Słupkowy</option>
+                    <option value="bar-vertical">Słupkowy poziomy (horyzontalny)</option>
+                    <option value="pie">Kołowy</option>
+                </select><br>
+
+                <label for="orderType">Wybierz tryb sortowania:</label>
+                <select class="form-select" id="orderType" name="orderType">
+                    <option value="default" selected>Domyślnie</option>
+                    <option value="ascending">Rosnąco</option>
+                    <option value="descending">Malejąco</option>
+                </select><br>
+
+                <label for="colouringType">Wybierz tryb kolorowanie słupków:</label>
+                <select class="form-select" id="colouringType" name="colouringType">
+                    <option value="default" selected>Domyślny</option>
+                    <option value="colourful">Kolorowy</option>
+                </select><br><br>
+                <button class="btn btn-primary program-name-navbar" onclick="generatePlot(animeData, additionalAnimeData)">Utwórz wykres</button>
+                <button class="btn btn-info" onclick="document.getElementById('plotField').innerHTML='';">Wyczyść pole wykresu</button>
+            </div>
+
+            <div class="statsControl">
+                <h4>Filtry</h4><br><br>
+                <h6>Rok emisji:</h6><br>
+                Od:<input type="number" style="max-width: 25%" min="1850" max="2200" class="form-control" id="filterYearRangeMin"><br>
+                Do:<input type="number" style="max-width: 25%" min="1850" max="2200" class="form-control" id="filterYearRangeMax">
+
+            </div>
+        </div>
+        <div id="plotField"></div>
+    </main>
+    {{ optional_popup }}
+    <footer class="footer border-top">
+        <div class="container text-center">
+          <span class="text-muted"><strong>© 2022 HiszpanInk Poor and Useless Software Ltd.</strong></span>
+        </div>
+      </footer>
+
+</body>
+</html>
