@@ -73,7 +73,7 @@ function generatePlot(mainData, additionalData) {
     let filterYearRangeMax = parseInt(document.getElementById('filterYearRangeMax').value);
     if(checkForYearRangeConflict(filterYearRangeMin, filterYearRangeMax)) {
         let toClearList = [];
-        title_filter = " emitowanego w latach";
+        title_filter = " emitowanej w latach";
         if((filterYearRangeMin != null || filterYearRangeMin != "") && (filterYearRangeMin >= 1850)) {
             for (let i = 0; i < itemsNum; i++) {
                 if(Number(mainDataCopy['Year_Broadcast'][i]) < Number(filterYearRangeMin)) {        
