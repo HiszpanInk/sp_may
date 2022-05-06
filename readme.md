@@ -1,9 +1,11 @@
 Poor MAL Version™
 
-Używane pakiety z npm:
+Packages from npm that I use here:
 - [express](https://www.npmjs.com/package/express)
 - [mysql](https://www.npmjs.com/package/mysql)
 - [util](https://www.npmjs.com/package/util)
 - [node-fetch (w wersji drugiej)](https://www.npmjs.com/package/node-fetch)
-- [Plotly.js](https://www.npmjs.com/package/plotly.js)
 - [LiquidJS](https://www.npmjs.com/package/liquidjs)
+<br>
+For plots I use [plotly package for JavaScript](https://plotly.com/javascript/)
+For external data I use [Jikan REST API](https://jikan.moe/)
