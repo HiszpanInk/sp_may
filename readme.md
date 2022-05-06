@@ -6,4 +6,5 @@ Packages from npm that I use here:
 - [util](https://www.npmjs.com/package/util)
 - [node-fetch (w wersji drugiej)](https://www.npmjs.com/package/node-fetch)
 - [LiquidJS](https://www.npmjs.com/package/liquidjs)
+<br>
 For plots I use [plotly package for JavaScript](https://plotly.com/javascript/)
