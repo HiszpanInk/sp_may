@@ -8,3 +8,4 @@ Packages from npm that I use here:
 - [LiquidJS](https://www.npmjs.com/package/liquidjs)
 <br>
 For plots I use [plotly package for JavaScript](https://plotly.com/javascript/)
+For external data I use [Jikan REST API](https://jikan.moe/)
