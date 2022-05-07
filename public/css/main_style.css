@@ -20,7 +20,6 @@ header > form {
     width: 40%;
 }
 main {
-
     min-height: 89vh;
     width: 95vw;
     margin-left: 2.5vw;
@@ -39,4 +38,12 @@ footer {
 }
 .program-name-navbar {
     margin-right: 2%;
+}
+.bottom_buttons {
+ max-width: 15%;   
+ float: left;
+}
+.advanced-search {
+    max-width: 25%;
+    margin-bottom: 5px;
 }

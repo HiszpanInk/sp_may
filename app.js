@@ -59,11 +59,15 @@ async function fetchWithTimeout(resource, options = {}) {
 }
 
 
-async function searchAnime(searchQuery) {
-  let max_search_results = 20;
-  //const response = await fetch(`https://api.jikan.moe/v4/anime?page=1&q=${searchQuery}&limit=${max_search_results}`)
+async function searchAnime(searchQuery, searchResultsMaxNum, sortBy, sortMethod, filterByAiring) {
+  let max_search_results = 15;
+  if(typeof searchResultsMaxNum != "undefined") max_search_results = searchResultsMaxNum;
+  let searchURL = `https://api.jikan.moe/v4/anime?page=1&q=${searchQuery}&limit=${max_search_results}`;
+
+  if(sortBy != "" && typeof sortBy != "undefined" && sortMethod != "" && typeof sortMethod != "undefined") searchURL = `https://api.jikan.moe/v4/anime?page=1&q=${searchQuery}&limit=${max_search_results}&order_by=${sortBy}&sort=${sortMethod}`;
+  if(filterByAiring != "" && typeof filterByAiring != "undefined") searchURL += `&status=${filterByAiring}`;
   try {
-    const response = await fetchWithTimeout(`https://api.jikan.moe/v4/anime?page=1&q=${searchQuery}&limit=${max_search_results}`, {
+    const response = await fetchWithTimeout(searchURL, {
       timeout: 6000
     });
     const data = await response.json();
@@ -394,11 +398,15 @@ async function refreshStatisticsInInternalDB() {
       break;
     }
     let required_data = {
-      'Avg_Rating' : anime_MAL_updated_data['data']['score'],
-      'Viewers_Count' : anime_MAL_updated_data['data']['members'],
-      'Episodes_Count' : anime_MAL_updated_data['data']['episodes'],
-      'Status_ID' : anime_MAL_updated_data['data']['status']
-    }
+      Avg_Rating : null,
+      Viewers_Count : null,
+      Episodes_Count : null,
+      Status_ID : null
+    };
+    if(typeof anime_MAL_updated_data['data']['score'] != "undefined") required_data['Avg_Rating'] = anime_MAL_updated_data['data']['score'];
+    if(typeof anime_MAL_updated_data['data']['members'] != "undefined") required_data['Viewers_Count'] = anime_MAL_updated_data['data']['members'];
+    if(typeof anime_MAL_updated_data['data']['episodes'] != "undefined") required_data['Episodes_Count'] = anime_MAL_updated_data['data']['episodes'];
+    if(typeof anime_MAL_updated_data['data']['status'] != "undefined") required_data['Status_ID'] = anime_MAL_updated_data['data']['status'];
     required_data['Status_ID'] = await getInternalIDByName("status", required_data['Status_ID']);
 
     for (const [key, value] of Object.entries(required_data)) {
@@ -409,7 +417,7 @@ async function refreshStatisticsInInternalDB() {
       }
     }
     await db_con.query(`UPDATE anime SET Avg_Rating=${required_data['Avg_Rating']}, Viewers_Count=${required_data['Viewers_Count']}, Episodes_Count=${required_data['Episodes_Count']}, Status_ID=${required_data['Status_ID']} WHERE ID_Internal=${id_data_set['ID_Internal']}`);
-    await sleep(750);
+    await sleep(1000);
   }
 }
 
@@ -457,7 +465,7 @@ app.get('/', function (req, res) {
 app.get('/list', async function (req, res) {
   let paragraph_content = "";
   paragraph_content += await createSearchResultsTableFromInternalDB();
-  paragraph_content += "<a href='/refreshAnimeStatistics'><button class='btn btn-info'>Odśwież statystyki</button></a>";
+  paragraph_content += "<a class='bottom_buttons' href='/refreshAnimeStatistics'><button class='btn btn-info'>Odśwież statystyki</button></a>";
   if(typeof req.query.popup !== 'undefined' || typeof req.query.alreadyAddedAnimePopup !== 'undefined') {
     let popup_html = "";
     if(req.query.popup == 'true') {
@@ -517,7 +525,7 @@ app.get('/list', async function (req, res) {
 app.get('/searchAnime', async function (req, res) {
   if (typeof req.query.searchQuery !== 'undefined') {
     // the variable is defined, generowanie strony jak ktoś zrobił zapytanie
-    let api_request_response = await searchAnime(req.query.searchQuery);
+    let api_request_response = await searchAnime(req.query.searchQuery, req.query.searchResultsNum, req.query.orderSearchBy, req.query.orderMethod, req.query.filterByAiring);
     //sprawdzamy czy zmienna jest tablicą, jeśli ją nie jest to sprawdzamy czy jest stringiem bo jeśli jest to wystąpił błąd
     if(typeof api_request_response == 'object') {
       if(Object.values(api_request_response)[1] !== 'HttpException') {
@@ -536,7 +544,30 @@ app.get('/searchAnime', async function (req, res) {
   } else {
     //generowanie strony jak ktoś chce wyszukać sobie przy pomocy tej strony 
     //(bo do tej strony można przekierować będzie ze strony głównej bo tam zrobię jakiś )
-    let paragraph_content = '<form method="GET" action="/searchAnime"><input class="form-control" name="searchQuery" type="text" style="width: 20%" placeholder="Search"><br><input type="submit" value="Szukaj" class="btn btn-secondary"></form>'
+    let paragraph_content = `
+    <form method="GET" action="/searchAnime">
+    <input class="form-control" name="searchQuery" type="text" style="width: 20%" placeholder="Search">
+    Maksymalna liczba wyników: <input class="form-control" name="searchResultsNum" type="number" min="1" max="60" value="15" style="width: 20%" placeholder="Docelowa maksymalna liczba wyników"><br><input type="submit" value="Szukaj" class="btn btn-secondary">
+    <br><br>Sortuj wartości po:<select id="orderSearchBy" class="form-select advanced-search" name="orderSearchBy">
+                    <option value="" selected>Domyślnie</option>
+                    <option value="title">Tytule</option>
+                    <option value="members">Liczbie widzów</option>
+                    <option value="score">Średniej ocenie</option>
+                    <option value="start_date">Okresie emisji</option>
+                    <option value="popularity">Popularności</option>
+                    <option value="rank">Randze</option>
+                </select>
+                <select id="orderMethod" class="form-select advanced-search" name="orderMethod">
+                    <option value="desc"selected>Malejąco</option>
+                    <option value="asc">Rosnąco</option>
+                </select><br>
+    Filtruj po statusie emisji <select id="filterByAiring" class="form-select advanced-search" name="filterByAiring">
+                                <option value="" selected>Nie</option>
+                                <option value="airing">W trakcie emisji</option>
+                                <option value="complete">Emisja zakończona</option>
+                                <option value="upcoming">Emisji nierozpoczęta</option>
+                            </select>
+    </form>`
     res.render('db_default_view', {subsite_title: 'Szukaj tytułu', paragraph_content: paragraph_content});
   }
 })
@@ -641,7 +672,7 @@ app.get('/animeStatisticsVisualisations', async function (req, res) {
 })
 
 app.get('/about', async function (req, res) {
-  res.send("Strona w trakcie budowy");
+  res.render('about_view', { subsite_title: "O stronie" });
 })
 
 app.listen(port)
