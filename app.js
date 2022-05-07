@@ -3,12 +3,24 @@ const port = 3000;
 
 const http = require('http');
 const path = require('path');
-const express = require('express')
+const express = require('express');
+const session = require('express-session');
 const fetch = require('node-fetch');
 const util = require("util"); 
+const bcrypt = require('bcrypt');
 
 //https://www.npmjs.com/package/table-sort-js
 const app = express()
+app.use(session({
+	secret: 'secret',
+	resave: true,
+	saveUninitialized: true,
+  cookie: {
+    loggedin: false
+  }
+}));
+app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
 
 var { Liquid } = require('liquidjs');
 var engine = new Liquid({
@@ -27,12 +39,23 @@ let sleep = ms => new Promise(resolve => setTimeout(resolve, ms));
 var mysql = require('mysql');
 const { stat } = require('fs');
 
+//I don't set passwords here only because it is a school project
+
 var db_con = mysql.createConnection({
   host: "localhost",
   user: "root",
   password: "",
   database: "p_mal_v"
 });
+
+
+var db_con_loginSys = mysql.createConnection({
+  host: "localhost",
+  user: "root",
+  password: "",
+  database: "p_mal_v_login"
+});
+
 
 db_con.connect((err) => {
   if(err){
@@ -454,6 +477,184 @@ function ConvertInternalDB_Data_ForPlot(SQL_Data) {
 
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+app.get('/login_page', function (req, res) {
+  if(typeof req.query.comm != 'undefined') {
+    let popup_communicate = "Wstąpił nieznany błąd";
+    let popup_type = "";
+    switch(req.query.comm) {
+      case "notLoggedIn":
+        popup_communicate = "Musisz się zalogować!";
+        popup_type = "Błąd!";
+        break;
+      case "registered":
+        popup_type = "Informacja"
+        popup_communicate = "Rejestracja powiodła się. Możesz się teraz zalogować";
+        break;
+    }
+    let popup_content = `<div class="py-2">
+      <div class="modal" id="test">
+          <div class="modal-dialog">
+              <div class="modal-content">
+                  <div class="modal-header">
+                      <h5 class="modal-title">${popup_type}</h5>
+                      <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                  </div>
+                  <div class="modal-body">
+                      <p>${popup_communicate}</p>
+                  </div>
+                  <div class="modal-footer">
+                      <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Zamknij</button>
+                  </div>
+              </div>
+          </div>
+      </div>
+      </div>
+      <script>
+      var myModal = new bootstrap.Modal(document.getElementById('test'), {})
+      myModal.toggle()
+      </script>`;
+    res.render('login_view', { mode_name_1: "logowania", mode_name_2 : "Zaloguj", action : "login" , register : `<a href="/register_page">Zarejestruj się</a>`, optional_popup : popup_content});
+  } else {
+    res.render('login_view', { mode_name_1: "logowania", mode_name_2 : "Zaloguj", action : "login" , register : `<a href="/register_page">Zarejestruj się</a>`});
+  }
+  })
+
+app.post('/login', function(req, res) {
+	// Capture the input fields
+	let username = req.body.username;
+	let password = req.body.password;
+	// Ensure the input fields exists and are not empty
+	if (username && password) {
+		// Execute SQL query that'll select the account from the database based on the specified username and password
+		db_con_loginSys.query('SELECT * FROM users WHERE username = ?', [username], function(error, results, fields) {
+			// If there is an issue with the query, output the error
+			if (error) throw error;
+			// If the account exists
+      let hash = results[0]['password'];
+			if (results.length > 0) {
+        bcrypt.compare(password, hash, function (err, result) {
+          if(result == true) {
+            
+            // Authenticate the user
+            req.session.loggedin = true;
+            req.session.username = username;
+            // Redirect to home page
+            res.redirect('/about');
+          }
+          });
+			} else {
+				res.redirect('/login_page');
+			}			
+		});
+	} else {
+		res.redirect('/login_page');
+	}
+});
+
+app.post('/logout', function (req, res) {
+  req.session.loggedin = false;
+  req.session.username = "";
+});
+
+app.get('/register_page', function (req, res) {
+  if(typeof req.query.comm != 'undefined') {
+    let popup_communicate = "Podczas rejestracji wystąpił nieznany błąd";
+    switch(req.query.comm) {
+      case "usernameTaken":
+        popup_communicate = "Ta nazwa użytkownika jest już zajęta!";
+        break;
+      case "emptyFields":
+        popup_communicate = "Nie uzupełniono wszystkich potrzebnych pól";
+        break;
+    }
+    let popup_content = `<div class="py-2">
+      <div class="modal" id="test">
+          <div class="modal-dialog">
+              <div class="modal-content">
+                  <div class="modal-header">
+                      <h5 class="modal-title">Błąd!</h5>
+                      <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                  </div>
+                  <div class="modal-body">
+                      <p>${popup_communicate}</p>
+                  </div>
+                  <div class="modal-footer">
+                      <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Zamknij</button>
+                  </div>
+              </div>
+          </div>
+      </div>
+      </div>
+      <script>
+      var myModal = new bootstrap.Modal(document.getElementById('test'), {})
+      myModal.toggle()
+      </script>`;
+    res.render('login_view', { mode_name_1: "rejestracji", mode_name_2 : "Zarejestruj", action : "register", optional_popup : popup_content});
+  } else {
+    res.render('login_view', { mode_name_1: "rejestracji", mode_name_2 : "Zarejestruj", action : "register"});
+  }
+})
+
+app.post('/register', function(req, res) {
+	// Capture the input fields
+	let username = req.body.username;
+	let password = req.body.password;
+	// Ensure the input fields exists and are not empty
+	if (username && password) {
+		// Execute SQL query that'll select the account from the database based on the specified username and password
+		db_con_loginSys.query('SELECT * FROM users WHERE username = ?', [username], function(error, results, fields) {
+			// If there is an issue with the query, output the error
+			if (error) throw error;
+			// If the account does not exists
+			if (results.length == 0) {
+				// create the user
+        bcrypt.hash(password, 10, function (err, hash) {
+          console.log(hash);
+          db_con_loginSys.query('INSERT INTO users (`username`, `password`) VALUES (?, ?);', [username, hash], function(error, results, fields) {
+               if (error) throw error;
+           });
+        });
+				res.redirect('/login_page?comm=registered');
+			} else {
+				res.redirect('/register_page?comm=usernameTaken');
+			}			
+		});
+	} else {
+		res.redirect('/register_page?comm=emptyFields');
+	}
+});
+
 app.get('/hw', function (req, res) {
   res.send('Hello World');
 })
@@ -474,7 +675,7 @@ app.get('/list', async function (req, res) {
           <div class="modal-dialog">
               <div class="modal-content">
                   <div class="modal-header">
-                      <h5 class="modal-title">Modal title</h5>
+                      <h5 class="modal-title">Informacja</h5>
                       <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                   </div>
                   <div class="modal-body">
@@ -498,7 +699,7 @@ app.get('/list', async function (req, res) {
           <div class="modal-dialog">
               <div class="modal-content">
                   <div class="modal-header">
-                      <h5 class="modal-title">Modal title</h5>
+                      <h5 class="modal-title">Błąd!</h5>
                       <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                   </div>
                   <div class="modal-body">
@@ -672,7 +873,13 @@ app.get('/animeStatisticsVisualisations', async function (req, res) {
 })
 
 app.get('/about', async function (req, res) {
-  res.render('about_view', { subsite_title: "O stronie" });
+    if (req.session.loggedin) {
+      // Output username
+      res.render('about_view', { subsite_title: "O stronie", username : req.session.username });
+    } else {
+      // Not logged in
+      res.redirect('/login_page?comm=notLoggedIn');
+    }
 })
 
 app.listen(port)

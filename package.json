@@ -1,6 +1,8 @@
 {
   "dependencies": {
+    "bcrypt": "^5.0.1",
     "express": "^4.17.3",
+    "express-session": "^1.17.2",
     "liquidjs": "^9.37.0",
     "mysql": "^2.18.1",
     "node-fetch": "^2.6.7",

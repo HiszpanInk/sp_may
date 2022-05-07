@@ -1,0 +1,52 @@
+form {
+    height: 50%;
+    width: 40%;
+    margin-top: 10%;
+    margin-left: 40%;
+    border: 1px solid black;
+    border-radius: 15px;
+    padding: 20px;
+}
+input {
+    margin-bottom: 5px;
+}
+body {
+    min-height: 100vh;
+}
+
+header {
+    height: 7vh;
+    padding: 0;
+    text-align: center;
+}
+h1 {
+    color: white;
+    background-color: black;
+    text-align: center;
+    padding-bottom: 20px;
+    padding-top: 20px;
+}
+
+main {
+    min-height: 89vh;
+    width: 95vw;
+    margin-left: 2.5vw;
+    margin-right: 2.5vw;
+    padding-top: 10px;
+    padding-bottom: 10px;
+    display: flex;
+    flex-flow: column;
+}
+footer {
+    height: 4vh;
+    padding-top: 1vh;
+}
+a {
+    margin-top: 2px;
+    margin-left: 5px;
+    border: 1px solid black;
+    padding: 7px;
+    border-radius: 15px;
+    text-decoration: none;
+    color: orangered;
+}
