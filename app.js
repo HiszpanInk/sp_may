@@ -122,7 +122,7 @@ async function getAnimeDataById(animeID) {
 async function getInternalIDByName(table, value) {
   var data = await db_con.query(`SELECT ID FROM ${table} WHERE Name="${value}"`);
   if(!data || data.length == 0 || data == null) {
-    if(value != "Nie podano") console.log(`Brakująca wartość w tabeli ${table}:${value}`);
+    if(value != "Nie podano" && value != null) console.log(`Brakująca wartość w tabeli ${table}:${value}`);
     data = "";
     return data;
   } else {
@@ -181,9 +181,7 @@ async function addAnimeToInternalDB(data) {
         required_data[key] = `'${required_data[key]}'`;
       }
     }
-    console.log(`INSERT INTO anime(ID_MAL, Title, Status_ID, Avg_Rating, Viewers_Count, Episodes_Count, Year_Broadcast, Season, Type, Genre, Image_URL) VALUES (${required_data['mal_id']},${required_data['title']},${required_data['status']},${required_data['score']},${required_data['members']},${required_data['episodes']},${required_data['year']},${required_data['season']},${required_data['type']},${required_data['genre']},${required_data['image']})`);
-  
-  
+    //console.log(`INSERT INTO anime(ID_MAL, Title, Status_ID, Avg_Rating, Viewers_Count, Episodes_Count, Year_Broadcast, Season, Type, Genre, Image_URL) VALUES (${required_data['mal_id']},${required_data['title']},${required_data['status']},${required_data['score']},${required_data['members']},${required_data['episodes']},${required_data['year']},${required_data['season']},${required_data['type']},${required_data['genre']},${required_data['image']})`);
     await db_con.query(`INSERT INTO anime(ID_MAL, Title, Status_ID, Avg_Rating, Viewers_Count, Episodes_Count, Year_Broadcast, Season, Type, Genre, Image_URL) VALUES 
     (${required_data['mal_id']},${required_data['title']},${required_data['status']},${required_data['score']},${required_data['members']},${required_data['episodes']},${required_data['year']},${required_data['season']},${required_data['type']},${required_data['genre']},${required_data['image']})`);
     return "";
@@ -204,7 +202,7 @@ async function removeAnimeFromInternalDB(animeInternalID) {
 async function getFieldTranslationForTable(table, searchBy, value) {
   var data = await db_con.query(`SELECT Name_PL FROM ${table} WHERE ${searchBy}="${value}"`);
   if(!data || data.length == 0 || data == null) {
-    if(value != "Nie podano") console.log(`Brakująca wartość w tabeli ${table}:${value}`);
+    if(value != "Nie podano" && value != null) console.log(`Brakująca wartość w tabeli ${table}:${value}`);
     return data;
   } else {
     data = data[0]["Name_PL"];
@@ -668,12 +666,13 @@ app.get('/', function (req, res) {
 })
 
 app.get('/list', async function (req, res) {
+  
   if (req.session.loggedin) {
     let paragraph_content = "";
     paragraph_content += await createSearchResultsTableFromInternalDB();
     paragraph_content += "<a class='bottom_buttons' href='/refreshAnimeStatistics'><button class='btn btn-info'>Odśwież statystyki</button></a>";
+    let popup_html = "";
     if(typeof req.query.popup !== 'undefined' || typeof req.query.alreadyAddedAnimePopup !== 'undefined') {
-      let popup_html = "";
       if(req.query.popup == 'true') {
         popup_html = `<div class="py-2">
         <div class="modal" id="test">
@@ -722,7 +721,12 @@ app.get('/list', async function (req, res) {
         myModal.toggle()
         </script>`
         res.render('db_default_view', {subsite_title: 'Lista', paragraph_content: paragraph_content, optional_popup: popup_html});
-      }}
+      } else {
+        res.render('db_default_view', {subsite_title: 'Lista', paragraph_content: paragraph_content});
+      } 
+    } else {
+      res.render('db_default_view', {subsite_title: 'Lista', paragraph_content: paragraph_content});
+    }
   } else {
     res.redirect('/login_page?comm=notLoggedIn');
   }
