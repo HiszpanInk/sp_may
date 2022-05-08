@@ -640,11 +640,11 @@ app.post('/register', function(req, res) {
         if (results.length == 0) {
           // create the user
           bcrypt.hash(password, 10, function (err, hash) {
-            console.log(hash);
             db_con_loginSys.query('INSERT INTO users (`username`, `password`) VALUES (?, ?);', [username, hash], function(error, results, fields) {
                 if (error) throw error;
             });
           });
+          console.log(`Zarejestrowano użytkownika ${username}`)
           res.redirect('/login_page?comm=registered');
         } else {
           res.redirect('/register_page?comm=usernameTaken');
