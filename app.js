@@ -519,6 +519,10 @@ app.get('/login_page', function (req, res) {
         popup_type = "Informacja"
         popup_communicate = "Rejestracja powiodła się. Możesz się teraz zalogować";
         break;
+      case "loggedOut":
+        popup_type = "Informacja"
+        popup_communicate = "Wylogowano.";
+        break;
     }
     let popup_content = `<div class="py-2">
       <div class="modal" id="test">
@@ -580,9 +584,10 @@ app.post('/login', function(req, res) {
 	}
 });
 
-app.post('/logout', function (req, res) {
+app.get('/logout', function (req, res) {
   req.session.loggedin = false;
   req.session.username = "";
+  res.redirect('/login_page?comm=loggedOut');
 });
 
 app.get('/register_page', function (req, res) {
