@@ -620,39 +620,39 @@ app.get('/register_page', function (req, res) {
       var myModal = new bootstrap.Modal(document.getElementById('test'), {})
       myModal.toggle()
       </script>`;
-    res.render('login_view', { mode_name_1: "rejestracji", mode_name_2 : "Zarejestruj", action : "register", optional_popup : popup_content});
+    res.render('login_view', { mode_name_1: "rejestracji", mode_name_2 : "Zarejestruj", action : "register", register : `<a href="/login_page">Zaloguj się</a>`, optional_popup : popup_content});
   } else {
-    res.render('login_view', { mode_name_1: "rejestracji", mode_name_2 : "Zarejestruj", action : "register"});
+    res.render('login_view', { mode_name_1: "rejestracji", mode_name_2 : "Zarejestruj", register : `<a href="/login_page">Zaloguj się</a>`, action : "register"});
   }
 })
 
 app.post('/register', function(req, res) {
-	// Capture the input fields
-	let username = req.body.username;
-	let password = req.body.password;
-	// Ensure the input fields exists and are not empty
-	if (username && password) {
-		// Execute SQL query that'll select the account from the database based on the specified username and password
-		db_con_loginSys.query('SELECT * FROM users WHERE username = ?', [username], function(error, results, fields) {
-			// If there is an issue with the query, output the error
-			if (error) throw error;
-			// If the account does not exists
-			if (results.length == 0) {
-				// create the user
-        bcrypt.hash(password, 10, function (err, hash) {
-          console.log(hash);
-          db_con_loginSys.query('INSERT INTO users (`username`, `password`) VALUES (?, ?);', [username, hash], function(error, results, fields) {
-               if (error) throw error;
-           });
-        });
-				res.redirect('/login_page?comm=registered');
-			} else {
-				res.redirect('/register_page?comm=usernameTaken');
-			}			
-		});
-	} else {
-		res.redirect('/register_page?comm=emptyFields');
-	}
+    // Capture the input fields
+    let username = req.body.username;
+    let password = req.body.password;
+    // Ensure the input fields exists and are not empty
+    if (username && password) {
+      // Execute SQL query that'll select the account from the database based on the specified username and password
+      db_con_loginSys.query('SELECT * FROM users WHERE username = ?', [username], function(error, results, fields) {
+        // If there is an issue with the query, output the error
+        if (error) throw error;
+        // If the account does not exists
+        if (results.length == 0) {
+          // create the user
+          bcrypt.hash(password, 10, function (err, hash) {
+            console.log(hash);
+            db_con_loginSys.query('INSERT INTO users (`username`, `password`) VALUES (?, ?);', [username, hash], function(error, results, fields) {
+                if (error) throw error;
+            });
+          });
+          res.redirect('/login_page?comm=registered');
+        } else {
+          res.redirect('/register_page?comm=usernameTaken');
+        }			
+      });
+    } else {
+      res.redirect('/register_page?comm=emptyFields');
+  }
 });
 
 app.get('/hw', function (req, res) {
@@ -660,217 +660,243 @@ app.get('/hw', function (req, res) {
 })
 
 app.get('/', function (req, res) {
-  res.redirect('/list');
+  if (req.session.loggedin) {
+    res.redirect('/list');
+  } else {
+    res.redirect('/login_page?comm=notLoggedIn');
+  }
 })
 
 app.get('/list', async function (req, res) {
-  let paragraph_content = "";
-  paragraph_content += await createSearchResultsTableFromInternalDB();
-  paragraph_content += "<a class='bottom_buttons' href='/refreshAnimeStatistics'><button class='btn btn-info'>Odśwież statystyki</button></a>";
-  if(typeof req.query.popup !== 'undefined' || typeof req.query.alreadyAddedAnimePopup !== 'undefined') {
-    let popup_html = "";
-    if(req.query.popup == 'true') {
-      popup_html = `<div class="py-2">
-      <div class="modal" id="test">
-          <div class="modal-dialog">
-              <div class="modal-content">
-                  <div class="modal-header">
-                      <h5 class="modal-title">Informacja</h5>
-                      <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                  </div>
-                  <div class="modal-body">
-                      <p>Statystyki w bazie danych zostały zaktualizowane</p>
-                  </div>
-                  <div class="modal-footer">
-                      <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Zamknij</button>
-                  </div>
-              </div>
-          </div>
-      </div>
-      </div>
-      <script>
-      var myModal = new bootstrap.Modal(document.getElementById('test'), {})
-      myModal.toggle()
-      </script>`
-      res.render('db_default_view', {subsite_title: 'Lista', paragraph_content: paragraph_content, optional_popup: popup_html});
-    } else if (req.query.alreadyAddedAnimePopup == 'true') {
-      popup_html = `<div class="py-2">
-      <div class="modal" id="test">
-          <div class="modal-dialog">
-              <div class="modal-content">
-                  <div class="modal-header">
-                      <h5 class="modal-title">Błąd!</h5>
-                      <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                  </div>
-                  <div class="modal-body">
-                      <p>Anime "${req.query.animeTitle}" już istnieje w bazie danych!</p>
-                  </div>
-                  <div class="modal-footer">
-                      <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Zamknij</button>
-                  </div>
-              </div>
-          </div>
-      </div>
-      </div>
-      <script>
-      var myModal = new bootstrap.Modal(document.getElementById('test'), {})
-      myModal.toggle()
-      </script>`
-      res.render('db_default_view', {subsite_title: 'Lista', paragraph_content: paragraph_content, optional_popup: popup_html});
-    }
+  if (req.session.loggedin) {
+    let paragraph_content = "";
+    paragraph_content += await createSearchResultsTableFromInternalDB();
+    paragraph_content += "<a class='bottom_buttons' href='/refreshAnimeStatistics'><button class='btn btn-info'>Odśwież statystyki</button></a>";
+    if(typeof req.query.popup !== 'undefined' || typeof req.query.alreadyAddedAnimePopup !== 'undefined') {
+      let popup_html = "";
+      if(req.query.popup == 'true') {
+        popup_html = `<div class="py-2">
+        <div class="modal" id="test">
+            <div class="modal-dialog">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title">Informacja</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+                    <div class="modal-body">
+                        <p>Statystyki w bazie danych zostały zaktualizowane</p>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Zamknij</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+        </div>
+        <script>
+        var myModal = new bootstrap.Modal(document.getElementById('test'), {})
+        myModal.toggle()
+        </script>`
+        res.render('db_default_view', {subsite_title: 'Lista', paragraph_content: paragraph_content, optional_popup: popup_html});
+      } else if (req.query.alreadyAddedAnimePopup == 'true') {
+        popup_html = `<div class="py-2">
+        <div class="modal" id="test">
+            <div class="modal-dialog">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title">Błąd!</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+                    <div class="modal-body">
+                        <p>Anime "${req.query.animeTitle}" już istnieje w bazie danych!</p>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Zamknij</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+        </div>
+        <script>
+        var myModal = new bootstrap.Modal(document.getElementById('test'), {})
+        myModal.toggle()
+        </script>`
+        res.render('db_default_view', {subsite_title: 'Lista', paragraph_content: paragraph_content, optional_popup: popup_html});
+      }}
   } else {
-    res.render('db_default_view', {subsite_title: 'Lista', paragraph_content: paragraph_content});
+    res.redirect('/login_page?comm=notLoggedIn');
   }
-})
+});
 
 app.get('/searchAnime', async function (req, res) {
-  if (typeof req.query.searchQuery !== 'undefined') {
-    // the variable is defined, generowanie strony jak ktoś zrobił zapytanie
-    let api_request_response = await searchAnime(req.query.searchQuery, req.query.searchResultsNum, req.query.orderSearchBy, req.query.orderMethod, req.query.filterByAiring);
-    //sprawdzamy czy zmienna jest tablicą, jeśli ją nie jest to sprawdzamy czy jest stringiem bo jeśli jest to wystąpił błąd
-    if(typeof api_request_response == 'object') {
-      if(Object.values(api_request_response)[1] !== 'HttpException') {
-        //i tutaj trzeba będzie przerobić te dane na tabelkę do HTMLa i tym się będzie zajmowała funkcja createSearchResultsTable
-        let paragraph_content = createSearchResultsTable(Object.values(api_request_response["data"]));
-        res.render('db_default_view', {subsite_title: `Wyniki wyszukiwania dla frazy "${req.query.searchQuery}"`, paragraph_content: paragraph_content});
-      } else if (Object.values(api_request_response)[1] == 'HttpException')
-      //błąd typu 404 
-        res.render('db_default_view', {subsite_title: "Błąd", paragraph_content: `Wystąpił błąd typu HTTP przy próbie zapytania do API. Kod błędu: ${Object.values(api_request_response)[0]}`});
-    } else {
-      //nieznany błąd
-      let paragraph_content = "Wystąpił nieznany błąd przy próbie wystosowania zapytania do API. Możliwe iż jest ono niedostępne w tym momencie."
-      res.render('db_default_view', {subsite_title: "Błąd", paragraph_content: paragraph_content});
-    }
-
-  } else {
-    //generowanie strony jak ktoś chce wyszukać sobie przy pomocy tej strony 
-    //(bo do tej strony można przekierować będzie ze strony głównej bo tam zrobię jakiś )
-    let paragraph_content = `
-    <form method="GET" action="/searchAnime">
-    <input class="form-control" name="searchQuery" type="text" style="width: 20%" placeholder="Search">
-    Maksymalna liczba wyników: <input class="form-control" name="searchResultsNum" type="number" min="1" max="60" value="15" style="width: 20%" placeholder="Docelowa maksymalna liczba wyników"><br><input type="submit" value="Szukaj" class="btn btn-secondary">
-    <br><br>Sortuj wartości po:<select id="orderSearchBy" class="form-select advanced-search" name="orderSearchBy">
-                    <option value="" selected>Domyślnie</option>
-                    <option value="title">Tytule</option>
-                    <option value="members">Liczbie widzów</option>
-                    <option value="score">Średniej ocenie</option>
-                    <option value="start_date">Okresie emisji</option>
-                    <option value="popularity">Popularności</option>
-                    <option value="rank">Randze</option>
-                </select>
-                <select id="orderMethod" class="form-select advanced-search" name="orderMethod">
-                    <option value="desc"selected>Malejąco</option>
-                    <option value="asc">Rosnąco</option>
-                </select><br>
-    Filtruj po statusie emisji <select id="filterByAiring" class="form-select advanced-search" name="filterByAiring">
-                                <option value="" selected>Nie</option>
-                                <option value="airing">W trakcie emisji</option>
-                                <option value="complete">Emisja zakończona</option>
-                                <option value="upcoming">Emisji nierozpoczęta</option>
-                            </select>
-    </form>`
-    res.render('db_default_view', {subsite_title: 'Szukaj tytułu', paragraph_content: paragraph_content});
-  }
-})
-
-app.get('/addAnime', async function (req, res) {
-  if (typeof req.query.anime_mal_id !== 'undefined') {
-    if(req.query.anime_mal_id != "") {
+  if (req.session.loggedin) {
+    if (typeof req.query.searchQuery !== 'undefined') {
       // the variable is defined, generowanie strony jak ktoś zrobił zapytanie
-      let api_request_response = await getAnimeDataById(req.query.anime_mal_id);
-      //sprawdzamy czy zmienna jest obiektem, jeśli ją nie jest to sprawdzamy czy jest stringiem bo jeśli jest to wystąpił błąd
+      let api_request_response = await searchAnime(req.query.searchQuery, req.query.searchResultsNum, req.query.orderSearchBy, req.query.orderMethod, req.query.filterByAiring);
+      //sprawdzamy czy zmienna jest tablicą, jeśli ją nie jest to sprawdzamy czy jest stringiem bo jeśli jest to wystąpił błąd
       if(typeof api_request_response == 'object') {
         if(Object.values(api_request_response)[1] !== 'HttpException') {
-          let response_addToDB = await addAnimeToInternalDB(api_request_response["data"]);
-          if(response_addToDB == "") {
-            res.redirect('/list');
-          } else {
-            res.redirect(`/list?alreadyAddedAnimePopup=true&animeTitle=${response_addToDB[0]}`);
-            
-          }
-          
-        } else if (Object.values(api_request_response)[1] == 'HttpException') {
+          //i tutaj trzeba będzie przerobić te dane na tabelkę do HTMLa i tym się będzie zajmowała funkcja createSearchResultsTable
+          let paragraph_content = createSearchResultsTable(Object.values(api_request_response["data"]));
+          res.render('db_default_view', {subsite_title: `Wyniki wyszukiwania dla frazy "${req.query.searchQuery}"`, paragraph_content: paragraph_content});
+        } else if (Object.values(api_request_response)[1] == 'HttpException')
         //błąd typu 404 
           res.render('db_default_view', {subsite_title: "Błąd", paragraph_content: `Wystąpił błąd typu HTTP przy próbie zapytania do API. Kod błędu: ${Object.values(api_request_response)[0]}`});
-        } else if (Object.values(api_request_response)[1] == 'BadResponseException'){
-          res.render('db_default_view', {subsite_title: "Błąd", paragraph_content: `Wystąpił błąd typu HTTP przy próbie zapytania do API. Kod błędu: ${Object.values(api_request_response)[0]}. Dodatkowe informacje: ${Object.values(api_request_response)[2]}`});
-        } else {
-          res.render('db_default_view', {subsite_title: "Błąd", paragraph_content: 'Wystąpił nieznany błąd'});
-        }
       } else {
         //nieznany błąd
         let paragraph_content = "Wystąpił nieznany błąd przy próbie wystosowania zapytania do API. Możliwe iż jest ono niedostępne w tym momencie."
         res.render('db_default_view', {subsite_title: "Błąd", paragraph_content: paragraph_content});
       }
+
     } else {
-      res.redirect('/searchAnime');
+      //generowanie strony jak ktoś chce wyszukać sobie przy pomocy tej strony 
+      //(bo do tej strony można przekierować będzie ze strony głównej bo tam zrobię jakiś )
+      let paragraph_content = `
+      <form method="GET" action="/searchAnime">
+      <input class="form-control" name="searchQuery" type="text" style="width: 20%" placeholder="Search">
+      Maksymalna liczba wyników: <input class="form-control" name="searchResultsNum" type="number" min="1" max="60" value="15" style="width: 20%" placeholder="Docelowa maksymalna liczba wyników"><br><input type="submit" value="Szukaj" class="btn btn-secondary">
+      <br><br>Sortuj wartości po:<select id="orderSearchBy" class="form-select advanced-search" name="orderSearchBy">
+                      <option value="" selected>Domyślnie</option>
+                      <option value="title">Tytule</option>
+                      <option value="members">Liczbie widzów</option>
+                      <option value="score">Średniej ocenie</option>
+                      <option value="start_date">Okresie emisji</option>
+                      <option value="popularity">Popularności</option>
+                      <option value="rank">Randze</option>
+                  </select>
+                  <select id="orderMethod" class="form-select advanced-search" name="orderMethod">
+                      <option value="desc"selected>Malejąco</option>
+                      <option value="asc">Rosnąco</option>
+                  </select><br>
+      Filtruj po statusie emisji <select id="filterByAiring" class="form-select advanced-search" name="filterByAiring">
+                                  <option value="" selected>Nie</option>
+                                  <option value="airing">W trakcie emisji</option>
+                                  <option value="complete">Emisja zakończona</option>
+                                  <option value="upcoming">Emisji nierozpoczęta</option>
+                              </select>
+      </form>`
+      res.render('db_default_view', {subsite_title: 'Szukaj tytułu', paragraph_content: paragraph_content});
     } 
+  } else {
+    res.redirect('/login_page?comm=notLoggedIn');
+  }
+});
+
+app.get('/addAnime', async function (req, res) {
+  if (req.session.loggedin) {
+    if (typeof req.query.anime_mal_id !== 'undefined') {
+      if(req.query.anime_mal_id != "") {
+        // the variable is defined, generowanie strony jak ktoś zrobił zapytanie
+        let api_request_response = await getAnimeDataById(req.query.anime_mal_id);
+        //sprawdzamy czy zmienna jest obiektem, jeśli ją nie jest to sprawdzamy czy jest stringiem bo jeśli jest to wystąpił błąd
+        if(typeof api_request_response == 'object') {
+          if(Object.values(api_request_response)[1] !== 'HttpException') {
+            let response_addToDB = await addAnimeToInternalDB(api_request_response["data"]);
+            if(response_addToDB == "") {
+              res.redirect('/list');
+            } else {
+              res.redirect(`/list?alreadyAddedAnimePopup=true&animeTitle=${response_addToDB[0]}`);
+              
+            }
+            
+          } else if (Object.values(api_request_response)[1] == 'HttpException') {
+          //błąd typu 404 
+            res.render('db_default_view', {subsite_title: "Błąd", paragraph_content: `Wystąpił błąd typu HTTP przy próbie zapytania do API. Kod błędu: ${Object.values(api_request_response)[0]}`});
+          } else if (Object.values(api_request_response)[1] == 'BadResponseException'){
+            res.render('db_default_view', {subsite_title: "Błąd", paragraph_content: `Wystąpił błąd typu HTTP przy próbie zapytania do API. Kod błędu: ${Object.values(api_request_response)[0]}. Dodatkowe informacje: ${Object.values(api_request_response)[2]}`});
+          } else {
+            res.render('db_default_view', {subsite_title: "Błąd", paragraph_content: 'Wystąpił nieznany błąd'});
+          }
+        } else {
+          //nieznany błąd
+          let paragraph_content = "Wystąpił nieznany błąd przy próbie wystosowania zapytania do API. Możliwe iż jest ono niedostępne w tym momencie."
+          res.render('db_default_view', {subsite_title: "Błąd", paragraph_content: paragraph_content});
+        }
+      } else {
+        res.redirect('/searchAnime');
+      } 
+    }
   } else {
     res.redirect('/searchAnime');
   }
 })
 
 app.get('/removeAnime', async function (req, res) {
-  if (typeof req.query.anime_internal_id !== 'undefined') {
-    if(req.query.anime_internal_id != "") {
-      await removeAnimeFromInternalDB(req.query.anime_internal_id);
+  if (req.session.loggedin) {
+    if (typeof req.query.anime_internal_id !== 'undefined') {
+      if(req.query.anime_internal_id != "") {
+        await removeAnimeFromInternalDB(req.query.anime_internal_id);
+      } 
     } 
-  } 
-  res.redirect('/list');
+    res.redirect('/list');
+  } else {
+    // Not logged in
+    res.redirect('/login_page?comm=notLoggedIn');
+  }
 })
 
 app.get('/refreshAnimeStatistics', async function (req, res) {
-  await refreshStatisticsInInternalDB();
-  res.redirect('/list?popup=true');
+  if (req.session.loggedin) {
+    await refreshStatisticsInInternalDB();
+    res.redirect('/list?popup=true');
+  } else {
+    // Not logged in
+    res.redirect('/login_page?comm=notLoggedIn');
+  }
 })
 
 app.get('/animeStatisticsVisualisations', async function (req, res) {
-  //Załadowywanie danych z bazy danych
-  let status_names = "";
-  let type_names = "";
-  let genre_names = "";
-  let season_names = "";
+  if (req.session.loggedin) {
+    //Załadowywanie danych z bazy danych
+    let status_names = "";
+    let type_names = "";
+    let genre_names = "";
+    let season_names = "";
 
 
-  let anime_data = await db_con.query("SELECT `ID_Internal`, `Title`, `Status_ID`, `Avg_Rating`, `Viewers_Count`, `Episodes_Count`, `Year_Broadcast`, `Season`, `Type`, `Genre` FROM `anime`;");
-  //jako iż te dane są nieużywane nie zaciągam ich
-  /*status_names = await db_con.query("SELECT `ID`, `Name_PL` FROM `status`;");
-  type_names = await db_con.query("SELECT `ID`, `Name_PL` FROM `type`;");
-  genre_names = await db_con.query("SELECT `ID`, `Name_PL` FROM `genre`;");
-  season_names = await db_con.query("SELECT `ID`, `Name_PL` FROM `season`;");*/
-  let DB_Data = await ConvertInternalDB_Data_ForPlot(anime_data);
+    let anime_data = await db_con.query("SELECT `ID_Internal`, `Title`, `Status_ID`, `Avg_Rating`, `Viewers_Count`, `Episodes_Count`, `Year_Broadcast`, `Season`, `Type`, `Genre` FROM `anime`;");
+    //jako iż te dane są nieużywane nie zaciągam ich
+    /*status_names = await db_con.query("SELECT `ID`, `Name_PL` FROM `status`;");
+    type_names = await db_con.query("SELECT `ID`, `Name_PL` FROM `type`;");
+    genre_names = await db_con.query("SELECT `ID`, `Name_PL` FROM `genre`;");
+    season_names = await db_con.query("SELECT `ID`, `Name_PL` FROM `season`;");*/
+    let DB_Data = await ConvertInternalDB_Data_ForPlot(anime_data);
 
-  let additionalAnimeDataRaw = {
-    status: status_names,
-    type: type_names,
-    genre: genre_names,
-    season: season_names
-  }
-  let additionalAnimeData = {
-    status: [],
-    type: [],
-    genre: [],
-    season: []
-  }
-  for (const [key_outer, value_outer] of Object.entries(additionalAnimeDataRaw)) {
-    for (const [key, value] of Object.entries([key_outer, value_outer][1])) {
-      additionalAnimeData[key_outer][value['ID']] = value['Name_PL'];
+    let additionalAnimeDataRaw = {
+      status: status_names,
+      type: type_names,
+      genre: genre_names,
+      season: season_names
     }
+    let additionalAnimeData = {
+      status: [],
+      type: [],
+      genre: [],
+      season: []
+    }
+    for (const [key_outer, value_outer] of Object.entries(additionalAnimeDataRaw)) {
+      for (const [key, value] of Object.entries([key_outer, value_outer][1])) {
+        additionalAnimeData[key_outer][value['ID']] = value['Name_PL'];
+      }
+    }
+  
+
+
+    let additional_external_head_content_toload = '';
+    additional_external_head_content_toload += '<link type="text/css" href="css/stats.css" rel="stylesheet">';
+    additional_external_head_content_toload += '<script src="https://cdn.plot.ly/plotly-2.12.0.min.js"></script>';
+    additional_external_head_content_toload += '<script src="js/generatePlotlyPlot.js"></script>';
+    additional_external_head_content_toload += `<script>
+      let animeData = JSON.parse('${JSON.stringify(DB_Data)}');
+      let additionalAnimeData = JSON.parse('${JSON.stringify(additionalAnimeData)}');
+    </script>`;
+
+    res.render('statistics_view', {additional_external_js_toload: additional_external_head_content_toload, subsite_title: 'Statystyki' });
+    
+  } else {
+    res.redirect('/login_page?comm=notLoggedIn');
   }
- 
-
-
-  let additional_external_head_content_toload = '';
-  additional_external_head_content_toload += '<link type="text/css" href="css/stats.css" rel="stylesheet">';
-  additional_external_head_content_toload += '<script src="https://cdn.plot.ly/plotly-2.12.0.min.js"></script>';
-  additional_external_head_content_toload += '<script src="js/generatePlotlyPlot.js"></script>';
-  additional_external_head_content_toload += `<script>
-    let animeData = JSON.parse('${JSON.stringify(DB_Data)}');
-    let additionalAnimeData = JSON.parse('${JSON.stringify(additionalAnimeData)}');
-  </script>`;
-
-  res.render('statistics_view', {additional_external_js_toload: additional_external_head_content_toload, subsite_title: 'Statystyki' });
-})
+});
 
 app.get('/about', async function (req, res) {
     if (req.session.loggedin) {
@@ -880,7 +906,7 @@ app.get('/about', async function (req, res) {
       // Not logged in
       res.redirect('/login_page?comm=notLoggedIn');
     }
-})
+});
 
 app.listen(port)
 console.log(`Server running at http://${hostname}:${port}/`);
