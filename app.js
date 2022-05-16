@@ -120,7 +120,7 @@ async function getAnimeDataById(animeID) {
 //to jest funkcja potrzebna przy tych tabelkach w następnej funckji
 //służy do znajdywania w tabelach status, type i season odpowiednich nazw po polsku
 async function getInternalIDByName(table, value) {
-  var data = await db_con.query(`SELECT ID FROM ${table} WHERE Name="${value}"`);
+  var data = await db_con.query("SELECT ID FROM ?? WHERE `Name`=?", [ table, value ]);
   if(!data || data.length == 0 || data == null) {
     if(value != "Nie podano" && value != null) console.log(`Brakująca wartość w tabeli ${table}:${value}`);
     data = "";
@@ -137,7 +137,7 @@ async function getInternalIDByName(table, value) {
 
 async function addAnimeToInternalDB(data) {
   //najpierw należy sprawdzić czy tej serii nie ma już w bazie danych
-  var checkAnimeExists = await db_con.query(`SELECT ID_Internal FROM anime WHERE ID_MAL="${data['mal_id']}"`);
+  var checkAnimeExists = await db_con.query("SELECT ID_Internal FROM anime WHERE ID_MAL=?", [ data['mal_id'] ]);
   if(typeof checkAnimeExists[0] == "undefined") {
     let required_data = {
       'title' : data['title'], 
@@ -182,8 +182,7 @@ async function addAnimeToInternalDB(data) {
       }
     }
     //console.log(`INSERT INTO anime(ID_MAL, Title, Status_ID, Avg_Rating, Viewers_Count, Episodes_Count, Year_Broadcast, Season, Type, Genre, Image_URL) VALUES (${required_data['mal_id']},${required_data['title']},${required_data['status']},${required_data['score']},${required_data['members']},${required_data['episodes']},${required_data['year']},${required_data['season']},${required_data['type']},${required_data['genre']},${required_data['image']})`);
-    await db_con.query(`INSERT INTO anime(ID_MAL, Title, Status_ID, Avg_Rating, Viewers_Count, Episodes_Count, Year_Broadcast, Season, Type, Genre, Image_URL) VALUES 
-    (${required_data['mal_id']},${required_data['title']},${required_data['status']},${required_data['score']},${required_data['members']},${required_data['episodes']},${required_data['year']},${required_data['season']},${required_data['type']},${required_data['genre']},${required_data['image']})`);
+    await db_con.query("INSERT INTO anime (ID_MAL, Title, Status_ID, Avg_Rating, Viewers_Count, Episodes_Count, Year_Broadcast, Season, Type, Genre, Image_URL) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)", [ required_data['mal_id'], required_data['title'], required_data['status'], required_data['score'], required_data['members'], required_data['episodes'], required_data['year'], required_data['season'], required_data['type'], required_data['genre'], required_data['image']]);
     return "";
   } else {
     //to anime jest już u nas w bazie
@@ -193,14 +192,15 @@ async function addAnimeToInternalDB(data) {
 
 
 async function removeAnimeFromInternalDB(animeInternalID) {
-  await db_con.query(`DELETE FROM anime WHERE ID_Internal="${animeInternalID}"`);
+  await db_con.query("DELETE FROM `anime` WHERE `ID_Internal`=?", [animeInternalID]);
 }
 
 //to jest funkcja potrzebna przy tych tabelkach w następnej funckji
 //służy do znajdywania w tabelach status, type i season odpowiednich nazw po polsku
 //table - tabelka, value - wartość po której szukamy, searchBy - kolumna po której szukamy
 async function getFieldTranslationForTable(table, searchBy, value) {
-  var data = await db_con.query(`SELECT Name_PL FROM ${table} WHERE ${searchBy}="${value}"`);
+  var data = await db_con.query("SELECT Name_PL FROM ?? WHERE ??=?", [ table, searchBy, value]);
+  //var data = await db_con.query(`SELECT Name_PL FROM ${table} WHERE ${searchBy}="${value}"`);
   if(!data || data.length == 0 || data == null) {
     if(value != "Nie podano" && value != null) console.log(`Brakująca wartość w tabeli ${table}:${value}`);
     return data;
@@ -316,7 +316,7 @@ async function createSearchResultsTable(searchResultsData) {
 
 
 async function createSearchResultsTableFromInternalDB() {
-  let data = await db_con.query(`SELECT * FROM anime;`);
+  let data = await db_con.query("SELECT * FROM anime;");
   let html_table = "";
 
   html_table += '<table class="table table-bordered table-sort remember-sort table-bordered table-arrows">';
@@ -401,7 +401,7 @@ async function createSearchResultsTableFromInternalDB() {
 }
 
 async function refreshStatisticsInInternalDB() {
-  let anime_mal_id_list = await db_con.query(`SELECT ID_Internal, ID_MAL FROM anime`);
+  let anime_mal_id_list = await db_con.query("SELECT ID_Internal, ID_MAL FROM anime");
   let ifErrorOccurred = false;
   await sleep(500);
   for (const [key, value] of Object.entries(anime_mal_id_list)) {
@@ -437,7 +437,8 @@ async function refreshStatisticsInInternalDB() {
         required_data[key] = `'${required_data[key]}'`;
       }
     }
-    await db_con.query(`UPDATE anime SET Avg_Rating=${required_data['Avg_Rating']}, Viewers_Count=${required_data['Viewers_Count']}, Episodes_Count=${required_data['Episodes_Count']}, Status_ID=${required_data['Status_ID']} WHERE ID_Internal=${id_data_set['ID_Internal']}`);
+    //await db_con.query(`UPDATE anime SET Avg_Rating=${required_data['Avg_Rating']}, Viewers_Count=${required_data['Viewers_Count']}, Episodes_Count=${required_data['Episodes_Count']}, Status_ID=${required_data['Status_ID']} WHERE ID_Internal=${id_data_set['ID_Internal']}`);
+    await db_con.query("UPDATE anime SET `Avg_Rating`=?, `Viewers_Count`=?, `Episodes_Count`=?, `Status_ID`=? WHERE `ID_Internal`=?", [ required_data['Avg_Rating'], required_data['Viewers_Count'], required_data['Episodes_Count'], required_data['Status_ID'], id_data_set['ID_Internal'] ]);
     await sleep(1000);
   }
 }
@@ -472,16 +473,6 @@ function ConvertInternalDB_Data_ForPlot(SQL_Data) {
   }
   return finalData;
 }
-
-
-
-
-
-
-
-
-
-
 
 
 
@@ -546,9 +537,9 @@ app.get('/login_page', function (req, res) {
       var myModal = new bootstrap.Modal(document.getElementById('test'), {})
       myModal.toggle()
       </script>`;
-    res.render('login_view', { mode_name_1: "logowania", mode_name_2 : "Zaloguj", action : "login" , register : `<a href="/register_page">Zarejestruj się</a>`, optional_popup : popup_content});
+    res.render('login_view', { subsite_title: 'Logowanie', mode_name_1: "logowania", mode_name_2 : "Zaloguj", action : "login" , register : `<a href="/register_page">Zarejestruj się</a>`, optional_popup : popup_content});
   } else {
-    res.render('login_view', { mode_name_1: "logowania", mode_name_2 : "Zaloguj", action : "login" , register : `<a href="/register_page">Zarejestruj się</a>`});
+    res.render('login_view', { subsite_title: 'Logowanie', mode_name_1: "logowania", mode_name_2 : "Zaloguj", action : "login" , register : `<a href="/register_page">Zarejestruj się</a>`});
   }
   })
 
@@ -623,9 +614,9 @@ app.get('/register_page', function (req, res) {
       var myModal = new bootstrap.Modal(document.getElementById('test'), {})
       myModal.toggle()
       </script>`;
-    res.render('login_view', { mode_name_1: "rejestracji", mode_name_2 : "Zarejestruj", action : "register", register : `<a href="/login_page">Zaloguj się</a>`, optional_popup : popup_content});
+    res.render('login_view', { subsite_title: 'Rejestracja', mode_name_1: "rejestracji", mode_name_2 : "Zarejestruj", action : "register", register : `<a href="/login_page">Zaloguj się</a>`, optional_popup : popup_content});
   } else {
-    res.render('login_view', { mode_name_1: "rejestracji", mode_name_2 : "Zarejestruj", register : `<a href="/login_page">Zaloguj się</a>`, action : "register"});
+    res.render('login_view', { subsite_title: 'Rejestracja', mode_name_1: "rejestracji", mode_name_2 : "Zarejestruj", register : `<a href="/login_page">Zaloguj się</a>`, action : "register"});
   }
 })
 
@@ -657,10 +648,6 @@ app.post('/register', function(req, res) {
       res.redirect('/register_page?comm=emptyFields');
   }
 });
-
-app.get('/hw', function (req, res) {
-  res.send('Hello World');
-})
 
 app.get('/', function (req, res) {
   if (req.session.loggedin) {
